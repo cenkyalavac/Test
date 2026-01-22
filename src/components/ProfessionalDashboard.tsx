@@ -7,13 +7,13 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PolarAngleAxis, RadarChart, Radar
 } from 'recharts';
 import {
-  FileText, TrendingUp, AlertCircle, CheckCircle, Download,
-  Printer, Calendar, Users, Globe, Activity, Award, Filter
+  FileText, AlertCircle, CheckCircle, Download,
+  Printer, Activity, Award
 } from 'lucide-react';
 
 interface QAMetrics {
@@ -45,7 +45,6 @@ export const ProfessionalDashboard: React.FC<DashboardProps> = ({
   fileName
 }) => {
   const [metrics, setMetrics] = useState<QAMetrics | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState('json');
 
   useEffect(() => {
@@ -404,11 +403,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
 interface SummaryItemProps {
   label: string;
   value: string | number;
-  color?: 'green' | 'red' | 'orange' | 'blue';
+  color?: 'green' | 'red' | 'orange' | 'blue' | 'gray';
 }
 
 const SummaryItem: React.FC<SummaryItemProps> = ({ label, value, color = 'gray' }) => {
-  const colors = {
+  const colors: Record<'green' | 'red' | 'orange' | 'blue' | 'gray', string> = {
     green: 'text-green-600',
     red: 'text-red-600',
     orange: 'text-orange-600',
@@ -426,7 +425,6 @@ const SummaryItem: React.FC<SummaryItemProps> = ({ label, value, color = 'gray' 
 
 const renderLabel = (entry: any) => {
   if (entry.value === 0) return '';
-  const percent = Math.round((entry.value / (entry.value + 1)) * 100);
   return `${entry.name}: ${entry.value}`;
 };
 

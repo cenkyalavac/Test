@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { AlertCircle, Info, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, Info, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MQMError {
   error_type: string;
@@ -56,9 +56,8 @@ const categoryColors: Record<string, string> = {
   'Other': 'bg-gray-100 text-gray-800',
 };
 
-const PredictionCard: React.FC<{ prediction: AIPrediction; index: number }> = ({
+const PredictionCard: React.FC<{ prediction: AIPrediction }> = ({
   prediction,
-  index,
 }) => {
   const [expanded, setExpanded] = useState(true);
   const hasErrors = prediction.errors.length > 0;
@@ -292,11 +291,10 @@ export const AIPredictionResults: React.FC<AIPredictionResultsProps> = ({
       <div>
         <h2 className="text-xl font-bold text-gray-800 mb-4">Segment Predictions</h2>
         <div className="space-y-0">
-          {predictions.map((prediction, index) => (
+          {predictions.map((prediction) => (
             <PredictionCard
               key={prediction.segment_id}
               prediction={prediction}
-              index={index}
             />
           ))}
         </div>

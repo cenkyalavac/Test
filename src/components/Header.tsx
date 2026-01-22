@@ -2,10 +2,9 @@ import { Menu, Settings, Bell } from 'lucide-react'
 
 interface HeaderProps {
   onMenuClick: () => void
-  menuOpen: boolean
 }
 
-export default function Header({ onMenuClick, menuOpen }: HeaderProps) {
+export default function Header({ onMenuClick }: HeaderProps) {
   return (
     <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
       <div className="flex items-center justify-between">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Menu, X, Upload, Zap } from 'lucide-react'
+import { Upload, Zap } from 'lucide-react'
 import './App.css'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
@@ -21,7 +21,12 @@ function App() {
   const [segments, setSegments] = useState<Segment[]>([])
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
+    if (!fileInput || !(fileInput instanceof File)) {
+      return
+    }
+
+    const file = fileInput as File
     const formData = new FormData()
     formData.append('file', file)
 
@@ -70,7 +75,7 @@ function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} menuOpen={sidebarOpen} />
+        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
         {/* Content Area */}
         <main className="flex-1 overflow-auto p-6">

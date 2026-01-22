@@ -24,9 +24,15 @@ interface AIAnalysisPanelProps {
   onClose?: () => void;
 }
 
-export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({ segments, onClose }) => {
+interface PredictionData {
+  engine: string;
+  predictions: any[];
+  total_predictions: number;
+}
+
+export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({ segments }) => {
   const [selectedEngine, setSelectedEngine] = useState('mock');
-  const [predictions, setPredictions] = useState(null);
+  const [predictions, setPredictions] = useState<PredictionData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'settings' | 'results'>('settings');

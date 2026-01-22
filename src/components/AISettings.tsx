@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Check, X, Eye, EyeOff } from 'lucide-react';
+import { Settings, Check, Eye, EyeOff } from 'lucide-react';
 
 interface EngineConfig {
   engine: string;
