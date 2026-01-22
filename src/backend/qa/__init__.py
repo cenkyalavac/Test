@@ -13,6 +13,13 @@ from .checklist_parser import ChecklistParser
 from .advanced_qa_checker import (
     AdvancedQAChecker, AdvancedQAIssue, QACheckType
 )
+from .mqm_typology import (
+    MQMError, MQMErrorType, MQMSeverity, MQMCategory, MQMClassifier
+)
+from .ai_predictor import (
+    AIPredictionConfig, AIEngine, AIPrediction, AIPredictor,
+    OpenAIPredictor, GeminiPredictor, PredictorFactory, MockAIPredictor
+)
 
 __all__ = [
     # Basic QA
@@ -31,4 +38,19 @@ __all__ = [
     "CheckType",
     "SearchMode",
     "ChecklistParser",
+    # MQM Typology
+    "MQMError",
+    "MQMErrorType",
+    "MQMSeverity",
+    "MQMCategory",
+    "MQMClassifier",
+    # AI Prediction
+    "AIPredictionConfig",
+    "AIEngine",
+    "AIPrediction",
+    "AIPredictor",
+    "OpenAIPredictor",
+    "GeminiPredictor",
+    "PredictorFactory",
+    "MockAIPredictor",
 ]

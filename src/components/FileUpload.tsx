@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Cloud, Upload } from 'lucide-react'
 
 interface FileUploadProps {
-  onFileSelect: (file: { name: string; size: number }) => void
+  onFileSelect: (file: File | { name: string; size: number } | null) => void
 }
 
 export default function FileUpload({ onFileSelect }: FileUploadProps) {
@@ -38,10 +38,7 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
   }
 
   const processFile = (file: File) => {
-    onFileSelect({
-      name: file.name,
-      size: file.size,
-    })
+    onFileSelect(file)
   }
 
   const handleClick = () => {
