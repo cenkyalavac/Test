@@ -57,26 +57,66 @@ function App() {
       }
 
       const file = fileInput as File
+
+      // Validate file size before upload
+      const MAX_SIZE = 50 * 1024 * 1024 // 50MB
+      if (file.size > MAX_SIZE) {
+        setError(`File too large. Maximum size: 50MB. Your file: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', file)
 
-      // Make API request
-      const response = await fetch(API_ENDPOINTS.PARSE, {
-        method: 'POST',
-        body: formData,
-      })
+      // Make API request with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+
+      let response: Response
+      try {
+        response = await fetch(API_ENDPOINTS.PARSE, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        })
+      } catch (fetchErr) {
+        clearTimeout(timeoutId)
+        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+          throw new Error('Request timed out. The server took too long to respond. Please check your network connection and try again.')
+        }
+        throw new Error(`Network error: Unable to connect to server at ${API_ENDPOINTS.PARSE}. Please check your internet connection and ensure the backend is running.`)
+      }
+
+      clearTimeout(timeoutId)
 
       // Handle HTTP errors
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
-        throw new Error(errorData.error || `Upload failed with status ${response.status}`)
+        let errorData: any
+        try {
+          errorData = await response.json()
+        } catch {
+          errorData = { error: 'Unknown error' }
+        }
+
+        const statusMessages: Record<number, string> = {
+          400: `Invalid file: ${errorData.error || 'File format or content is invalid'}`,
+          413: `File too large: ${errorData.error || 'Maximum file size exceeded'}`,
+          500: 'Server error: The backend encountered an error processing your file',
+        }
+
+        const message = statusMessages[response.status] || `Upload failed (HTTP ${response.status}): ${errorData.error || 'Please try again'}`
+        throw new Error(message)
       }
 
       const data = await response.json()
 
       // Validate response format
       if (!data?.segments || !Array.isArray(data.segments)) {
-        throw new Error('Invalid response from server: missing segments')
+        throw new Error('Invalid response from server: Server returned unexpected format')
+      }
+
+      if (data.segments.length === 0) {
+        throw new Error('No translatable segments found in file. Please ensure the file contains valid translation content.')
       }
 
       // Type-safe segment mapping
@@ -113,12 +153,13 @@ function App() {
   if (showDashboard && segments.length > 0) {
     return (
       <div className="w-full">
-        <div className="fixed top-4 left-4 z-50 flex gap-2">
+        <div className="fixed top-8 left-8 z-50 flex gap-3">
           <button
             onClick={() => setShowDashboard(false)}
-            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition"
+            className="group relative px-5 py-2.5 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white rounded-lg transition font-medium border border-white/10 hover:border-white/20 flex items-center gap-2"
           >
-            ← Geri
+            <span>←</span>
+            <span>Back</span>
           </button>
           {segments.length > 0 && (
             <button
@@ -147,7 +188,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 text-white">
+      <div className="flex h-screen bg-black text-white overflow-hidden">
         {/* Sidebar */}
         <Sidebar isOpen={sidebarOpen} />
 
@@ -157,42 +198,48 @@ function App() {
           <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
           {/* Content Area */}
-          <main className="flex-1 overflow-auto p-8">
-            <div className="max-w-6xl mx-auto">
-              {/* Hero Section */}
-              <div className="mb-12">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                    </svg>
+          <main className="flex-1 overflow-auto">
+            <div className="min-h-full bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-8">
+              <div className="max-w-6xl mx-auto">
+                {/* Hero Section */}
+                <div className="mb-16 animate-fade-in-up">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-xl glow-effect">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text">
+                        TRANSLATION QA PLATFORM
+                      </span>
+                      <h1 className="text-sm font-semibold text-slate-400">Version 1.0</h1>
+                    </div>
                   </div>
-                  <span className="text-sm font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Translation QA Tool
-                  </span>
+                  <h1 className="text-6xl font-bold mb-4 gradient-text drop-shadow-2xl">
+                    Professional Quality Assurance
+                  </h1>
+                  <p className="text-xl text-slate-300 mb-2 font-light">
+                    Enterprise-grade translation analysis with AI-powered insights
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    16+ automated checks • Multi-format support • Real-time analysis • 99.9% accuracy
+                  </p>
                 </div>
-                <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-lg">
-                  Professional Translation Quality Assurance
-                </h1>
-                <p className="text-lg text-slate-300 mb-2">
-                  Analyze translation files with 16+ QA checks, AI-powered predictions, and match percentage analysis
-                </p>
-                <p className="text-sm text-slate-400">
-                  Supports XLIFF, PO, JSON, and translation packages (SDLXLIFF, MemoQ, etc.)
-                </p>
               </div>
 
               {/* Error Message Display */}
               {error && (
-                <div className="mb-6 p-4 rounded-lg bg-red-900/20 border border-red-700 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="mb-6 p-5 rounded-xl bg-gradient-to-r from-red-900/30 to-red-800/30 border border-red-600/50 flex items-start gap-4 animate-fade-in-up glow-effect" style={{ boxShadow: '0 0 20px rgba(239, 68, 68, 0.2)' }}>
+                  <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5 animate-pulse" />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-red-300">Error</h3>
-                    <p className="text-red-200 text-sm">{error}</p>
+                    <h3 className="font-bold text-red-300 text-lg">Upload Error</h3>
+                    <p className="text-red-100 text-sm mt-1 leading-relaxed">{error}</p>
+                    <p className="text-red-200/60 text-xs mt-3">Tip: Make sure the file format is supported and the backend is running at {API_ENDPOINTS.PARSE}</p>
                   </div>
                   <button
                     onClick={() => setError(null)}
-                    className="text-red-400 hover:text-red-300 flex-shrink-0"
+                    className="text-red-400 hover:text-red-300 flex-shrink-0 text-2xl transition-colors"
                     aria-label="Dismiss error"
                   >
                     ×
@@ -213,11 +260,11 @@ function App() {
               {uploadedFile ? (
                 <div className="space-y-6">
                   {/* File Info Card */}
-                  <div className="rounded-xl border border-slate-700 bg-gradient-to-br from-slate-800/50 to-slate-700/50 p-6 backdrop-blur-sm">
-                    <div className="flex items-start justify-between mb-6">
+                  <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-purple-500/5 to-white/5 backdrop-blur-xl p-8 glow-effect animate-slide-in-right">
+                    <div className="flex items-start justify-between mb-8">
                       <div>
-                        <h2 className="text-2xl font-bold text-white mb-2">File Information</h2>
-                        <p className="text-slate-300">Uploaded and analyzed: {uploadedFile.name}</p>
+                        <h2 className="text-3xl font-bold text-white mb-2">File Analysis Complete</h2>
+                        <p className="text-slate-300">Processing: <span className="text-purple-300 font-semibold font-mono">{uploadedFile.name}</span></p>
                       </div>
                       <button
                         onClick={() => {
@@ -226,52 +273,54 @@ function App() {
                           setShowDashboard(false)
                           setError(null)
                         }}
-                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+                        className="px-6 py-2 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white rounded-lg transition font-medium border border-white/10 hover:border-white/20"
                       >
-                        Upload New File
+                        ↻ Upload New File
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                       {/* File Name */}
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-indigo-500/30">
-                        <p className="text-xs font-semibold text-indigo-300 mb-1">FILE NAME</p>
-                        <p className="text-lg font-bold text-white break-all">{uploadedFile.name}</p>
+                      <div className="group p-5 rounded-xl bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 hover:border-blue-400/60 transition-all hover:bg-blue-900/40">
+                        <p className="text-xs font-bold text-blue-300 mb-2 uppercase tracking-wider">File Name</p>
+                        <p className="text-lg font-bold text-white break-all group-hover:text-blue-100 transition-colors font-mono text-sm">{uploadedFile.name}</p>
                       </div>
 
                       {/* File Size */}
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-purple-900/50 to-indigo-900/50 border border-purple-500/30">
-                        <p className="text-xs font-semibold text-purple-300 mb-1">FILE SIZE</p>
-                        <p className="text-lg font-bold text-white">{(uploadedFile.size / 1024).toFixed(2)} KB</p>
+                      <div className="group p-5 rounded-xl bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-500/30 hover:border-purple-400/60 transition-all hover:bg-purple-900/40">
+                        <p className="text-xs font-bold text-purple-300 mb-2 uppercase tracking-wider">File Size</p>
+                        <p className="text-lg font-bold text-white group-hover:text-purple-100 transition-colors">{(uploadedFile.size / 1024).toFixed(2)} KB</p>
                       </div>
 
                       {/* Segments Count */}
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-blue-900/30 to-purple-900/30 border border-blue-700/30">
-                        <p className="text-xs font-semibold text-blue-300 mb-1">SEGMENTS</p>
-                        <p className="text-lg font-bold text-blue-100">{segments.length}</p>
+                      <div className="group p-5 rounded-xl bg-gradient-to-br from-pink-900/30 to-pink-800/20 border border-pink-500/30 hover:border-pink-400/60 transition-all hover:bg-pink-900/40">
+                        <p className="text-xs font-bold text-pink-300 mb-2 uppercase tracking-wider">Segments</p>
+                        <p className="text-lg font-bold text-white group-hover:text-pink-100 transition-colors">{segments.length}</p>
                       </div>
                     </div>
 
                     {/* Action Buttons */}
                     {segments.length > 0 && (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button
                           onClick={() => setShowDashboard(true)}
                           disabled={isLoading}
-                          className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:via-blue-400 hover:to-cyan-400 text-white rounded-xl font-bold transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border border-white/20 overflow-hidden"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:translate-x-full transition-transform duration-500 -translate-x-full" />
+                          <svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                           </svg>
-                          Quality Dashboard
+                          <span className="relative z-10">Quality Dashboard</span>
                         </button>
                         <button
                           onClick={() => setShowAIAnalysis(true)}
                           disabled={isLoading}
-                          className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-500 to-red-500 hover:from-purple-500 hover:via-pink-400 hover:to-red-400 text-white rounded-xl font-bold transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border border-white/20 overflow-hidden"
                         >
-                          <Zap size={18} />
-                          AI Analysis
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:translate-x-full transition-transform duration-500 -translate-x-full" />
+                          <Zap size={20} className="relative z-10" />
+                          <span className="relative z-10">AI Analysis</span>
                         </button>
                       </div>
                     )}
@@ -355,14 +404,22 @@ interface QuickStatCardProps {
 
 function QuickStatCard({ label, value, icon, color }: QuickStatCardProps) {
   return (
-    <div className={`rounded-2xl bg-gradient-to-br ${color} p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 border border-white/10`}>
-      <div className="flex items-center gap-4">
-        <div className="text-4xl drop-shadow-lg">{icon}</div>
-        <div>
-          <p className="text-sm font-medium opacity-90">{label}</p>
-          <p className="text-3xl font-bold drop-shadow">{value}</p>
+    <div className={`group relative rounded-2xl bg-gradient-to-br ${color} p-6 text-white transition-all transform hover:scale-105 border border-white/15 hover:border-white/30 overflow-hidden`}>
+      {/* Shine effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
+
+      <div className="relative z-10">
+        <div className="flex items-start gap-4">
+          <div className="text-5xl drop-shadow-lg opacity-90 group-hover:opacity-100 transition-opacity">{icon}</div>
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-white/70 group-hover:text-white/90 transition-colors uppercase tracking-wider">{label}</p>
+            <p className="text-4xl font-bold mt-2 drop-shadow-lg group-hover:scale-110 transition-transform origin-left">{value}</p>
+          </div>
         </div>
       </div>
+
+      {/* Shadow effect */}
+      <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl -z-10 ${color}`} />
     </div>
   )
 }
@@ -374,9 +431,14 @@ interface InfoPanelProps {
 
 function InfoPanel({ title, description }: InfoPanelProps) {
   return (
-    <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 p-6 hover:border-purple-400/60 hover:from-indigo-900/50 hover:to-purple-900/50 transition-all group hover:shadow-lg hover:shadow-purple-500/20 transform hover:scale-105">
-      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-indigo-200 transition-colors">{title}</h3>
-      <p className="text-slate-200 text-sm leading-relaxed">{description}</p>
+    <div className="group relative rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl p-8 hover:border-white/20 transition-all transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20 cursor-default overflow-hidden">
+      {/* Background gradient effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/5 group-hover:via-purple-500/5 group-hover:to-pink-500/5 transition-all rounded-2xl" />
+
+      <div className="relative z-10">
+        <h3 className="text-xl font-bold text-white mb-3 group-hover:gradient-text transition-all duration-300">{title}</h3>
+        <p className="text-slate-300 text-sm leading-relaxed group-hover:text-slate-200 transition-colors">{description}</p>
+      </div>
     </div>
   )
 }

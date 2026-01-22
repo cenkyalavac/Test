@@ -25,6 +25,8 @@ from src.backend.qa import (
 ALLOWED_FILE_EXTENSIONS = {
     # Standard translation formats
     '.json', '.xml', '.xliff', '.xlf', '.po', '.yaml', '.yml', '.csv', '.properties',
+    # XLIFF variants
+    '.sdlxliff', '.mqxliff', '.mxliff',
     # Translation package formats
     '.xlz', '.wsxz', '.sdlppx', '.sdlrpx', '.mqout', '.zip'
 }

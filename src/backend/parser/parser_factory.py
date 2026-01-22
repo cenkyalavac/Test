@@ -29,11 +29,12 @@ class ParserFactory:
     # Supported file extensions mapped to parser classes
     PARSERS = {
         ".xliff": XLIFFStrategy,
-        ".sdxliff": XLIFFStrategy,  # SDL Trados variant
-        ".mqxliff": XLIFFStrategy,  # MemoQ variant
-        ".xlf": XLIFFStrategy,      # Short extension
+        ".sdlxliff": XLIFFStrategy,  # SDL Trados variant
+        ".mqxliff": XLIFFStrategy,   # MemoQ variant
+        ".mxliff": XLIFFStrategy,    # Memsource variant
+        ".xlf": XLIFFStrategy,       # Short extension
         ".po": POStrategy,
-        ".pot": POStrategy,         # PO Template
+        ".pot": POStrategy,          # PO Template
         ".json": JSONStrategy,
         ".i18n.json": JSONStrategy,
     }
@@ -91,7 +92,7 @@ class ParserFactory:
         path = Path(file_path)
         extension = path.suffix.lower()
 
-        if extension in [".xliff", ".sdxliff", ".mqxliff", ".xlf"]:
+        if extension in [".xliff", ".sdlxliff", ".mqxliff", ".mxliff", ".xlf"]:
             return "xliff"
         elif extension in [".po", ".pot"]:
             return "po"
