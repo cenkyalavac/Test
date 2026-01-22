@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Upload, Zap, BarChart3 } from 'lucide-react'
+import { Upload, Zap, BarChart3, AlertCircle } from 'lucide-react'
 import './App.css'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import FileUpload from './components/FileUpload'
 import AIAnalysisPanel from './components/AIAnalysisPanel'
 import { ModernTranslationDashboard } from './components/ModernTranslationDashboard'
+import ErrorBoundary from './components/ErrorBoundary'
+import { API_ENDPOINTS } from './config'
 
 interface Segment {
   segment_id: string
@@ -39,49 +41,72 @@ function App() {
   const [segments, setSegments] = useState<Segment[]>([])
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
   const [showDashboard, setShowDashboard] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
-    if (!fileInput || !(fileInput instanceof File)) {
-      return
-    }
-
-    const file = fileInput as File
-    const formData = new FormData()
-    formData.append('file', file)
+    // Reset state
+    setError(null)
+    setIsLoading(true)
 
     try {
-      const response = await fetch('http://localhost:8000/api/files/parse', {
+      // Validate input
+      if (!fileInput || !(fileInput instanceof File)) {
+        setError('Please select a valid file')
+        return
+      }
+
+      const file = fileInput as File
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Make API request
+      const response = await fetch(API_ENDPOINTS.PARSE, {
         method: 'POST',
         body: formData,
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setUploadedFile({ name: file.name, size: file.size })
-
-        // Map parsed segments to our interface with match percentage
-        const parsedSegments = data.segments.map((seg: any) => ({
-          segment_id: seg.segment_id,
-          source_text: seg.source_text,
-          target_text: seg.target_text,
-          status: seg.status,
-          source_language: seg.source_language,
-          target_language: seg.target_language,
-          file_path: seg.file_path,
-          source_plain_text: seg.source_plain_text,
-          target_plain_text: seg.target_plain_text,
-          source_inline_tags: seg.source_inline_tags,
-          target_inline_tags: seg.target_inline_tags,
-          metadata: seg.metadata,
-          xliff_version: seg.xliff_version,
-          variant: seg.variant,
-          match_percentage: seg.metadata?.match_quality || 0,
-        }))
-        setSegments(parsedSegments)
-        setShowDashboard(true)
+      // Handle HTTP errors
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+        throw new Error(errorData.error || `Upload failed with status ${response.status}`)
       }
-    } catch (error) {
-      console.error('Error uploading file:', error)
+
+      const data = await response.json()
+
+      // Validate response format
+      if (!data?.segments || !Array.isArray(data.segments)) {
+        throw new Error('Invalid response from server: missing segments')
+      }
+
+      // Type-safe segment mapping
+      const parsedSegments: Segment[] = data.segments.map((seg: any) => ({
+        segment_id: seg.segment_id ?? 'unknown',
+        source_text: seg.source_text ?? '',
+        target_text: seg.target_text ?? '',
+        status: seg.status ?? 'unknown',
+        source_language: seg.source_language,
+        target_language: seg.target_language,
+        file_path: seg.file_path,
+        source_plain_text: seg.source_plain_text,
+        target_plain_text: seg.target_plain_text,
+        source_inline_tags: seg.source_inline_tags,
+        target_inline_tags: seg.target_inline_tags,
+        metadata: seg.metadata,
+        xliff_version: seg.xliff_version,
+        variant: seg.variant,
+        match_percentage: seg.metadata?.match_quality ?? 0,
+      }))
+
+      setUploadedFile({ name: file.name, size: file.size })
+      setSegments(parsedSegments)
+      setShowDashboard(true)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(errorMessage)
+      console.error('File upload error:', err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -121,76 +146,100 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} />
+    <ErrorBoundary>
+      <div className="flex h-screen bg-gray-900 text-white">
+        {/* Sidebar */}
+        <Sidebar isOpen={sidebarOpen} />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">Translation QA Tool</h1>
-              <p className="text-gray-400">Bilingual çeviri dosyalarındaki hataları bulun ve kontrol edin</p>
-            </div>
-
-            {/* File Upload Area */}
-            <FileUpload onFileSelect={(file) => {
-              if (file) handleFileUpload(file)
-            }} />
-
-            {/* File Info Display */}
-            {uploadedFile && (
-              <div className="mt-8 bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Upload className="w-5 h-5 text-blue-500" />
-                  Yüklenen Dosya Bilgisi
-                </h2>
-                <div className="grid grid-cols-3 gap-6 mb-6">
-                  <div>
-                    <p className="text-gray-400 text-sm mb-1">Dosya Adı</p>
-                    <p className="text-lg font-semibold text-white break-all">{uploadedFile.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm mb-1">Dosya Boyutu</p>
-                    <p className="text-lg font-semibold text-white">
-                      {(uploadedFile.size / 1024).toFixed(2)} KB
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm mb-1">Segmentler</p>
-                    <p className="text-lg font-semibold text-white">{segments.length}</p>
-                  </div>
-                </div>
-
-                {segments.length > 0 && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowDashboard(true)}
-                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-                    >
-                      <BarChart3 size={18} />
-                      Dashboard
-                    </button>
-                    <button
-                      onClick={() => setShowAIAnalysis(true)}
-                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
-                    >
-                      <Zap size={18} />
-                      AI Analiz Başlat
-                    </button>
-                  </div>
-                )}
+          {/* Content Area */}
+          <main className="flex-1 overflow-auto p-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">Translation QA Tool</h1>
+                <p className="text-gray-400">Find and verify errors in bilingual translation files</p>
               </div>
-            )}
-          </div>
-        </main>
+
+              {/* Error Message Display */}
+              {error && (
+                <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-red-300">Error</h3>
+                    <p className="text-red-200 text-sm">{error}</p>
+                  </div>
+                  <button
+                    onClick={() => setError(null)}
+                    className="text-red-400 hover:text-red-300"
+                    aria-label="Dismiss error"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              {/* File Upload Area */}
+              <FileUpload
+                onFileSelect={(file) => {
+                  if (file && !isLoading) handleFileUpload(file)
+                }}
+              />
+
+              {/* File Info Display */}
+              {uploadedFile && (
+                <div className="mt-8 bg-gray-800 border border-gray-700 rounded-lg p-6">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-blue-500" />
+                    Uploaded File Information
+                  </h2>
+                  <div className="grid grid-cols-3 gap-6 mb-6">
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">File Name</p>
+                      <p className="text-lg font-semibold text-white break-all">{uploadedFile.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">File Size</p>
+                      <p className="text-lg font-semibold text-white">
+                        {(uploadedFile.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">Segments</p>
+                      <p className="text-lg font-semibold text-white">{segments.length}</p>
+                    </div>
+                  </div>
+
+                  {segments.length > 0 && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowDashboard(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading}
+                      >
+                        <BarChart3 size={18} />
+                        Dashboard
+                      </button>
+                      <button
+                        onClick={() => setShowAIAnalysis(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading}
+                      >
+                        <Zap size={18} />
+                        Start AI Analysis
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   )
 }
 
