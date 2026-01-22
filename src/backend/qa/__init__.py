@@ -21,6 +21,19 @@ from .ai_predictor import (
     OpenAIPredictor, GeminiPredictor, PredictorFactory, MockAIPredictor
 )
 
+try:
+    from .spell_checker import (
+        MultiLanguageSpellChecker, SupportedLanguage, SpellingError,
+        SPELLCHECKER_AVAILABLE, check_spelling, get_spell_checker
+    )
+except ImportError:
+    MultiLanguageSpellChecker = None
+    SupportedLanguage = None
+    SpellingError = None
+    SPELLCHECKER_AVAILABLE = False
+    check_spelling = None
+    get_spell_checker = None
+
 __all__ = [
     # Basic QA
     "QAChecker",
@@ -53,4 +66,11 @@ __all__ = [
     "GeminiPredictor",
     "PredictorFactory",
     "MockAIPredictor",
+    # Spell Checking
+    "MultiLanguageSpellChecker",
+    "SupportedLanguage",
+    "SpellingError",
+    "SPELLCHECKER_AVAILABLE",
+    "check_spelling",
+    "get_spell_checker",
 ]

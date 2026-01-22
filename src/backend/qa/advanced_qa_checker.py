@@ -19,6 +19,16 @@ from enum import Enum
 from ..parser.models import Segment, SegmentStatus
 from .checklist_model import Checklist, CheckRule
 
+try:
+    from .spell_checker import (
+        MultiLanguageSpellChecker, SupportedLanguage, SpellingError,
+        SPELLCHECKER_AVAILABLE
+    )
+except ImportError:
+    SPELLCHECKER_AVAILABLE = False
+    MultiLanguageSpellChecker = None
+    SupportedLanguage = None
+
 
 class QACheckType(str, Enum):
     """Comprehensive QA check types."""
@@ -69,6 +79,8 @@ class AdvancedQAChecker:
         self.checklists: List[Checklist] = []
         self.glossary: Dict[str, Set[str]] = {}  # term -> correct translations
         self.segment_index: Dict[str, Segment] = {}  # For consistency checks
+        self.spell_checkers: Dict[str, MultiLanguageSpellChecker] = {}  # Language -> checker
+        self.spell_check_enabled = SPELLCHECKER_AVAILABLE
 
     def check_segments(self, segments: List[Segment]) -> List[AdvancedQAIssue]:
         """
@@ -132,6 +144,10 @@ class AdvancedQAChecker:
 
         # 13. Checklist validation
         self._check_against_checklists(segment)
+
+        # 14. Spell checking (if available)
+        if self.spell_check_enabled:
+            self._check_spelling(segment)
 
     def _check_untranslated(self, segment: Segment) -> bool:
         """Check for untranslated segments."""
@@ -473,6 +489,67 @@ class AdvancedQAChecker:
                         details={"other_sources": list(other_sources)},
                     )
                 )
+
+    def _check_spelling(self, segment: Segment) -> None:
+        """
+        Check for spelling errors in translation target text.
+
+        This check uses PySpellChecker to detect potential spelling mistakes
+        in the translated text. Spell check errors are classified as warnings.
+        """
+        if not segment.target_text or not segment.target_text.strip():
+            return
+
+        try:
+            language_code = segment.target_language or "en"
+
+            # Map language code to SupportedLanguage enum
+            lang_map = {
+                "en": "ENGLISH", "es": "SPANISH", "fr": "FRENCH",
+                "de": "GERMAN", "pt": "PORTUGUESE", "ru": "RUSSIAN",
+                "pl": "POLISH", "it": "ITALIAN", "nl": "DUTCH",
+                "tr": "TURKISH", "ar": "ARABIC", "el": "GREEK",
+                "zh": "CHINESE"
+            }
+
+            lang_name = lang_map.get(language_code, "ENGLISH")
+
+            if lang_name not in self.spell_checkers:
+                try:
+                    lang_enum = SupportedLanguage[lang_name]
+                    self.spell_checkers[lang_name] = MultiLanguageSpellChecker(lang_enum)
+                except Exception:
+                    # Fallback to English if language not supported
+                    if "ENGLISH" not in self.spell_checkers:
+                        self.spell_checkers["ENGLISH"] = MultiLanguageSpellChecker(
+                            SupportedLanguage.ENGLISH
+                        )
+                    lang_name = "ENGLISH"
+
+            checker = self.spell_checkers[lang_name]
+            errors: List[SpellingError] = checker.check_text(segment.target_text)
+
+            for error in errors:
+                suggestions_text = ", ".join(error.suggestions[:3]) if error.suggestions else "no suggestions"
+                self.issues.append(
+                    AdvancedQAIssue(
+                        segment_id=segment.segment_id,
+                        check_type=QACheckType.SPELLING_ERROR,
+                        severity="warning",
+                        message=f"Spelling: '{error.word}' → {suggestions_text}",
+                        source_text=segment.source_text,
+                        target_text=segment.target_text,
+                        details={
+                            "misspelled_word": error.word,
+                            "suggestions": error.suggestions[:5],
+                            "position": error.position,
+                            "context": error.context
+                        }
+                    )
+                )
+        except Exception as e:
+            # Silently skip spell checking on error
+            pass
 
     def load_checklist(self, checklist: Checklist) -> None:
         """Load a checklist for validation."""

@@ -2,11 +2,14 @@
 Flask API for Translation QA Tool
 
 Provides REST endpoints for file parsing, QA checking, and AI predictions.
+Security features: Input validation, file type checking, secure filename handling.
 """
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import json
+import os
 from typing import List, Dict, Any, Optional
 
 from src.backend.parser.parser_factory import ParserFactory
@@ -16,8 +19,23 @@ from src.backend.qa import (
     PredictorFactory, MockAIPredictor, ChecklistParser
 )
 
+# Security Configuration
+ALLOWED_FILE_EXTENSIONS = {'.json', '.xml', '.xliff', '.po', '.yaml', '.yml', '.csv', '.properties'}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+MAX_SEGMENTS = 10000  # Maximum segments to process
+
 app = Flask(__name__)
 CORS(app)
+
+# Security headers
+@app.after_request
+def set_security_headers(response):
+    """Add security headers to responses."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
 
 # Global state for API keys and configuration
 api_config = {
@@ -28,6 +46,80 @@ api_config = {
 
 # Cache for parsed segments
 segments_cache: Dict[str, List[Segment]] = {}
+
+
+# ============================================================================
+# Security & Validation Helper Functions
+# ============================================================================
+
+def validate_filename(filename: str) -> bool:
+    """Validate filename for security."""
+    if not filename:
+        return False
+
+    # Check extension
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ALLOWED_FILE_EXTENSIONS:
+        return False
+
+    # Check for null bytes and suspicious patterns
+    if '\x00' in filename or '..' in filename:
+        return False
+
+    return True
+
+
+def validate_file(file) -> tuple[bool, str]:
+    """
+    Validate uploaded file.
+
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not file or not file.filename:
+        return False, "No file provided"
+
+    if not validate_filename(file.filename):
+        ext = os.path.splitext(file.filename)[1].lower()
+        return False, f"File type not allowed: {ext}. Allowed: {', '.join(ALLOWED_FILE_EXTENSIONS)}"
+
+    # Check file size
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+
+    if file_size > MAX_FILE_SIZE:
+        return False, f"File too large. Maximum: {MAX_FILE_SIZE // 1024 // 1024}MB"
+
+    if file_size == 0:
+        return False, "File is empty"
+
+    return True, ""
+
+
+def validate_segments(segments: List[Dict]) -> tuple[bool, str]:
+    """
+    Validate segment data.
+
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not segments:
+        return False, "No segments provided"
+
+    if len(segments) > MAX_SEGMENTS:
+        return False, f"Too many segments. Maximum: {MAX_SEGMENTS}"
+
+    for seg in segments:
+        if not isinstance(seg, dict):
+            return False, "Invalid segment format"
+
+        required_fields = ['segment_id', 'source_text', 'target_text', 'status']
+        for field in required_fields:
+            if field not in seg:
+                return False, f"Missing required field: {field}"
+
+    return True, ""
 
 
 @app.route("/api/health", methods=["GET"])
@@ -131,40 +223,55 @@ def parse_file():
     """
     Parse a translation file (XLIFF, PO, JSON).
 
+    Security: Validates file type, size, and content.
     Returns list of segments.
     """
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files["file"]
-    if not file.filename:
-        return jsonify({"error": "No filename"}), 400
+
+    # Validate file
+    is_valid, error_msg = validate_file(file)
+    if not is_valid:
+        return jsonify({"error": error_msg}), 400
 
     try:
         # Read file content
         content = file.read()
+
+        # Secure filename for caching
+        secure_name = secure_filename(file.filename)
+        if not secure_name:
+            secure_name = f"file_{id(file)}"
 
         # Auto-detect and parse
         factory = ParserFactory()
         parser = factory.create_parser_for_file(file.filename, content)
         segments = parser.parse()
 
+        # Limit segments
+        if len(segments) > MAX_SEGMENTS:
+            return jsonify({
+                "error": f"File contains too many segments ({len(segments)}). Maximum: {MAX_SEGMENTS}"
+            }), 413
+
         # Cache segments for later use
-        file_id = file.filename
-        segments_cache[file_id] = segments
+        segments_cache[secure_name] = segments
 
         # Convert segments to JSON-serializable format
         segments_data = [seg.to_dict() for seg in segments]
 
         return jsonify({
-            "file_id": file_id,
+            "file_id": secure_name,
             "filename": file.filename,
             "segment_count": len(segments),
             "segments": segments_data
         }), 200
 
     except Exception as e:
-        return jsonify({"error": f"Failed to parse file: {str(e)}"}), 400
+        app.logger.error(f"File parsing error: {type(e).__name__}")
+        return jsonify({"error": "Failed to parse file"}), 400
 
 
 # ============================================================================
@@ -175,6 +282,8 @@ def parse_file():
 def run_qa_check():
     """
     Run advanced QA checks on segments.
+
+    Security: Validates input data.
 
     Request body:
     {
@@ -190,11 +299,19 @@ def run_qa_check():
         ]
     }
     """
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON"}), 400
+    except Exception:
+        return jsonify({"error": "Invalid JSON"}), 400
+
     segments_data = data.get("segments", [])
 
-    if not segments_data:
-        return jsonify({"error": "No segments provided"}), 400
+    # Validate segments
+    is_valid, error_msg = validate_segments(segments_data)
+    if not is_valid:
+        return jsonify({"error": error_msg}), 400
 
     try:
         # Reconstruct segments
@@ -255,18 +372,32 @@ def predict_errors():
     """
     Use AI to predict translation errors with MQM classification.
 
+    Security: Validates input and engine parameter.
+
     Request body:
     {
         "segments": [...],
         "engine": "openai" | "gemini" | "mock" (optional, uses default if not specified)
     }
     """
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON"}), 400
+    except Exception:
+        return jsonify({"error": "Invalid JSON"}), 400
+
     segments_data = data.get("segments", [])
     engine = data.get("engine", api_config["default_engine"]).lower()
 
-    if not segments_data:
-        return jsonify({"error": "No segments provided"}), 400
+    # Validate segments
+    is_valid, error_msg = validate_segments(segments_data)
+    if not is_valid:
+        return jsonify({"error": error_msg}), 400
+
+    # Validate engine
+    if engine not in ["openai", "gemini", "mock"]:
+        return jsonify({"error": f"Unknown engine: {engine}. Must be: openai, gemini, mock"}), 400
 
     try:
         # Reconstruct segments
