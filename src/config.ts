@@ -4,10 +4,10 @@
  */
 
 /**
- * Intelligently determine API base URL
- * - Development (localhost): Use http://localhost:8000
- * - Production (Railway/Netlify): Use same domain with /api prefix or VITE_API_URL
- * - Environment variable override: VITE_API_URL takes precedence
+ * Determine API base URL based on environment
+ * - Production (same server): Empty string or '/' for relative paths
+ * - Development (localhost): http://localhost:8000 for separate backend
+ * - Environment override: VITE_API_URL takes precedence
  */
 function getApiBaseUrl(): string {
   // 1. Check environment variable first (takes precedence)
@@ -17,20 +17,17 @@ function getApiBaseUrl(): string {
     return envUrl;
   }
 
-  // 2. Development: localhost
+  // 2. Development: localhost with separate backend server
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     const localUrl = 'http://localhost:8000';
     console.log('Using local development URL:', localUrl);
     return localUrl;
   }
 
-  // 3. Production: same origin with /api prefix (for same-server deployments)
-  const protocol = window.location.protocol;
-  const hostname = window.location.hostname;
-  const port = window.location.port ? `:${window.location.port}` : '';
-  const productionUrl = `${protocol}//${hostname}${port}`;
-  console.log('Using production URL:', productionUrl);
-  return productionUrl;
+  // 3. Production: same server deployment (Railway, Netlify, etc.)
+  // Use relative paths for API calls to same origin
+  console.log('Using same-origin API calls (relative paths)');
+  return '';
 }
 
 export const API_BASE_URL = getApiBaseUrl();

@@ -5,7 +5,7 @@ Provides REST endpoints for file parsing, QA checking, and AI predictions.
 Security features: Input validation, file type checking, secure filename handling.
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import json
@@ -33,8 +33,19 @@ ALLOWED_FILE_EXTENSIONS = {
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 MAX_SEGMENTS = 10000  # Maximum segments to process
 
-app = Flask(__name__)
-CORS(app)
+# Path to dist folder (frontend build)
+DIST_FOLDER = os.path.join(os.path.dirname(__file__), '../../dist')
+
+# Flask app configuration
+app = Flask(
+    __name__,
+    static_folder=os.path.join(DIST_FOLDER, 'assets'),
+    static_url_path='/assets',
+    template_folder=DIST_FOLDER
+)
+
+# CORS configuration (simplified for same-origin deployment)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Security headers
 @app.after_request
@@ -750,6 +761,38 @@ def parse_checklist():
 
     except Exception as e:
         return jsonify({"error": f"Checklist parsing failed: {str(e)}"}), 400
+
+
+# ============================================================================
+# Frontend Routes (SPA Support)
+# ============================================================================
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    """
+    Serve React SPA frontend.
+
+    - If it's an API request (/api/*), let Flask routing handle it
+    - If it's a static asset, serve from dist/assets
+    - Otherwise, serve index.html for client-side routing
+    """
+    # Don't handle API routes
+    if path.startswith('api/'):
+        return jsonify({"error": "Not Found"}), 404
+
+    # Try to serve static assets
+    if path.startswith('assets/'):
+        try:
+            return send_from_directory(DIST_FOLDER, path)
+        except Exception:
+            pass
+
+    # Serve index.html for all other routes (SPA routing)
+    try:
+        return send_from_directory(DIST_FOLDER, 'index.html')
+    except Exception as e:
+        return jsonify({"error": "Frontend files not found. Run 'npm run build' first."}), 500
 
 
 if __name__ == "__main__":
