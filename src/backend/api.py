@@ -11,7 +11,6 @@ from werkzeug.utils import secure_filename
 import json
 import os
 import io
-import subprocess
 from typing import List, Dict, Any, Optional
 
 from src.backend.parser.parser_factory import ParserFactory
@@ -36,34 +35,6 @@ MAX_SEGMENTS = 10000  # Maximum segments to process
 
 # Path to dist folder (frontend build)
 DIST_FOLDER = os.path.join(os.path.dirname(__file__), '../../dist')
-
-# Auto-build frontend if dist doesn't exist (Railway deployment safety)
-def ensure_frontend_built():
-    """Build frontend if /dist folder is missing (Railway deployment)"""
-    if not os.path.exists(DIST_FOLDER):
-        print("[INFO] Frontend build not found. Building now...")
-        try:
-            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-            print(f"[INFO] Building from: {root_dir}")
-
-            # Install dependencies
-            print("[INFO] Running: npm install")
-            subprocess.run(['npm', 'install'], cwd=root_dir, check=True)
-
-            # Build frontend
-            print("[INFO] Running: npm run build")
-            subprocess.run(['npm', 'run', 'build'], cwd=root_dir, check=True)
-
-            print("[INFO] Frontend build completed successfully!")
-        except subprocess.CalledProcessError as e:
-            print(f"[WARNING] Frontend build failed: {e}")
-            print("[INFO] Continuing anyway - Flask will attempt to serve static files")
-        except Exception as e:
-            print(f"[WARNING] Build error: {e}")
-            print("[INFO] Continuing anyway - Flask will attempt to serve static files")
-
-# Build frontend if needed (before Flask app creation)
-ensure_frontend_built()
 
 # Flask app configuration
 app = Flask(

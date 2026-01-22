@@ -1,0 +1,5 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "buildCommand": "npm install && npm run build && pip install -r requirements.txt",
+  "startCommand": "python -m src.backend.api"
+}
