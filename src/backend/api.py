@@ -33,8 +33,18 @@ ALLOWED_FILE_EXTENSIONS = {
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 MAX_SEGMENTS = 10000  # Maximum segments to process
 
-# Path to dist folder (frontend build)
-DIST_FOLDER = os.path.join(os.path.dirname(__file__), '../../dist')
+# Path to dist folder (frontend build) - Use absolute paths for reliability
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))  # src/backend -> src -> root
+DIST_FOLDER = os.path.join(ROOT_DIR, 'dist')
+
+# Debug logging for Railway deployment
+print(f"DEBUG: Current Dir: {CURRENT_DIR}")
+print(f"DEBUG: Root Dir: {ROOT_DIR}")
+print(f"DEBUG: Dist Folder Path: {DIST_FOLDER}")
+print(f"DEBUG: Dist Folder Exists? {os.path.exists(DIST_FOLDER)}")
+if os.path.exists(DIST_FOLDER):
+    print(f"DEBUG: Dist Contents: {os.listdir(DIST_FOLDER)}")
 
 # Flask app configuration
 app = Flask(
