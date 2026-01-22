@@ -824,4 +824,8 @@ def serve_spa_fallback(error):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8000, host='0.0.0.0')
+    # Use PORT environment variable set by Railway, default to 8000 for local development
+    port = int(os.environ.get('PORT', 8000))
+    # Disable debug mode in production (Railway)
+    debug = os.environ.get('ENVIRONMENT', 'development') == 'development'
+    app.run(debug=debug, port=port, host='0.0.0.0')
