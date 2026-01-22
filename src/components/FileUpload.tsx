@@ -90,10 +90,10 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
-        className={`relative w-full rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden group ${
+        className={`relative w-full rounded-3xl cursor-pointer transition-all duration-300 overflow-hidden group ${
           isDragging
-            ? 'bg-gradient-to-br from-blue-600/30 to-purple-600/30 border-2 border-blue-400 shadow-lg shadow-blue-500/30 scale-[1.02]'
-            : 'bg-gradient-to-br from-slate-700 to-slate-800 border-2 border-dashed border-slate-600 hover:border-slate-500 hover:from-slate-600 hover:to-slate-700'
+            ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-2 border-blue-300 shadow-2xl shadow-blue-500/50 scale-[1.02]'
+            : 'bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 border-2 border-dashed border-purple-400/30 hover:border-purple-400/60 hover:from-indigo-800 hover:to-purple-800'
         }`}
       >
         <div className="p-16">
@@ -193,14 +193,14 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <div className="p-4 rounded-lg bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-slate-600 hover:border-slate-500 transition-all group cursor-default">
-      <div className="flex items-start gap-3">
-        <div className="text-blue-400 mt-1 group-hover:text-blue-300 transition-colors">
+    <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-purple-500/30 hover:border-purple-400/60 transition-all group cursor-default hover:shadow-lg hover:shadow-purple-500/20 transform hover:scale-105">
+      <div className="flex items-start gap-4">
+        <div className="text-indigo-300 mt-1 group-hover:text-indigo-200 transition-colors text-2xl">
           {icon}
         </div>
         <div>
-          <h4 className="font-semibold text-white mb-1">{title}</h4>
-          <p className="text-sm text-slate-300">{description}</p>
+          <h4 className="font-semibold text-white mb-1 group-hover:text-indigo-200 transition-colors">{title}</h4>
+          <p className="text-sm text-slate-200">{description}</p>
         </div>
       </div>
     </div>

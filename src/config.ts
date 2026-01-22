@@ -27,7 +27,7 @@ export const AI_ENGINES = {
 
 // Supported file formats
 export const SUPPORTED_FORMATS = {
-  XLIFF: ['.xliff', '.xlf', '.xml'],
+  XLIFF: ['.xliff', '.xlf', '.xml', '.sdlxliff', '.mqxliff', '.mxliff'],
   PO: ['.po'],
   JSON: ['.json'],
   PACKAGES: ['.xlz', '.wsxz', '.sdlppx', '.sdlrpx', '.mqout'],

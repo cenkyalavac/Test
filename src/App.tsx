@@ -147,7 +147,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      <div className="flex h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 text-white">
         {/* Sidebar */}
         <Sidebar isOpen={sidebarOpen} />
 
@@ -171,7 +171,7 @@ function App() {
                     Translation QA Tool
                   </span>
                 </div>
-                <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-lg">
                   Professional Translation Quality Assurance
                 </h1>
                 <p className="text-lg text-slate-300 mb-2">
@@ -234,14 +234,14 @@ function App() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       {/* File Name */}
-                      <div className="p-4 rounded-lg bg-slate-700/50 border border-slate-600">
-                        <p className="text-xs font-semibold text-slate-400 mb-1">FILE NAME</p>
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-indigo-500/30">
+                        <p className="text-xs font-semibold text-indigo-300 mb-1">FILE NAME</p>
                         <p className="text-lg font-bold text-white break-all">{uploadedFile.name}</p>
                       </div>
 
                       {/* File Size */}
-                      <div className="p-4 rounded-lg bg-slate-700/50 border border-slate-600">
-                        <p className="text-xs font-semibold text-slate-400 mb-1">FILE SIZE</p>
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-purple-900/50 to-indigo-900/50 border border-purple-500/30">
+                        <p className="text-xs font-semibold text-purple-300 mb-1">FILE SIZE</p>
                         <p className="text-lg font-bold text-white">{(uploadedFile.size / 1024).toFixed(2)} KB</p>
                       </div>
 
@@ -355,12 +355,12 @@ interface QuickStatCardProps {
 
 function QuickStatCard({ label, value, icon, color }: QuickStatCardProps) {
   return (
-    <div className={`rounded-lg bg-gradient-to-br ${color} p-6 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105`}>
-      <div className="flex items-center gap-3">
-        <div className="text-3xl">{icon}</div>
+    <div className={`rounded-2xl bg-gradient-to-br ${color} p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 border border-white/10`}>
+      <div className="flex items-center gap-4">
+        <div className="text-4xl drop-shadow-lg">{icon}</div>
         <div>
           <p className="text-sm font-medium opacity-90">{label}</p>
-          <p className="text-3xl font-bold">{value}</p>
+          <p className="text-3xl font-bold drop-shadow">{value}</p>
         </div>
       </div>
     </div>
@@ -374,9 +374,9 @@ interface InfoPanelProps {
 
 function InfoPanel({ title, description }: InfoPanelProps) {
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 hover:border-slate-600 hover:bg-slate-700/50 transition-all group">
-      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">{title}</h3>
-      <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
+    <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 p-6 hover:border-purple-400/60 hover:from-indigo-900/50 hover:to-purple-900/50 transition-all group hover:shadow-lg hover:shadow-purple-500/20 transform hover:scale-105">
+      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-indigo-200 transition-colors">{title}</h3>
+      <p className="text-slate-200 text-sm leading-relaxed">{description}</p>
     </div>
   )
 }
