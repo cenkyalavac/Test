@@ -5,7 +5,7 @@ Provides REST endpoints for file parsing, QA checking, and AI predictions.
 Security features: Input validation, file type checking, secure filename handling.
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import json
@@ -776,31 +776,50 @@ def parse_checklist():
 # Frontend Routes (SPA Support)
 # ============================================================================
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve_frontend(path):
-    """
-    Serve React SPA frontend.
+# Serve static assets from dist/assets directory
+@app.route('/assets/<path:filepath>')
+def serve_assets(filepath):
+    """Serve frontend static assets."""
+    try:
+        return send_from_directory(os.path.join(DIST_FOLDER, 'assets'), filepath)
+    except Exception as e:
+        return jsonify({"error": "Asset not found"}), 404
 
-    - If it's an API request (/api/*), let Flask routing handle it
-    - If it's a static asset, serve from dist/assets
-    - Otherwise, serve index.html for client-side routing
-    """
-    # Don't handle API routes
-    if path.startswith('api/'):
-        return jsonify({"error": "Not Found"}), 404
 
-    # Try to serve static assets
-    if path.startswith('assets/'):
-        try:
-            return send_from_directory(DIST_FOLDER, path)
-        except Exception:
-            pass
-
-    # Serve index.html for all other routes (SPA routing)
+# Serve root index.html
+@app.route('/')
+def serve_root():
+    """Serve the React SPA root."""
     try:
         return send_from_directory(DIST_FOLDER, 'index.html')
     except Exception as e:
+        return jsonify({"error": "Frontend files not found. Run 'npm run build' first."}), 500
+
+
+# Error handler for 404 - serve index.html for SPA routing
+@app.errorhandler(404)
+def serve_spa_fallback(error):
+    """
+    Serve index.html for all non-API routes.
+    This enables client-side routing in the React SPA.
+
+    Important: This is only called for routes that don't match any Flask route.
+    API routes are matched before this handler is called, so they won't be affected.
+    """
+    # Log the 404 for debugging
+    path = request.path
+    print(f"[SPA Fallback] 404 for path: {path}")
+
+    # If this somehow matches an API route, don't serve the frontend
+    # (This should never happen if routing is correct)
+    if path.startswith('/api/'):
+        return jsonify({"error": "API endpoint not found"}), 404
+
+    # Serve index.html for all other routes (client-side SPA routing)
+    try:
+        return send_from_directory(DIST_FOLDER, 'index.html')
+    except Exception as e:
+        print(f"[Error] Failed to serve index.html: {e}")
         return jsonify({"error": "Frontend files not found. Run 'npm run build' first."}), 500
 
 
