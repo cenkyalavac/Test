@@ -3,8 +3,37 @@
  * Handles environment-based settings for API endpoints and other config
  */
 
-// Determine API base URL from environment or use default
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+/**
+ * Intelligently determine API base URL
+ * - Development (localhost): Use http://localhost:8000
+ * - Production (Railway/Netlify): Use same domain with /api prefix or VITE_API_URL
+ * - Environment variable override: VITE_API_URL takes precedence
+ */
+function getApiBaseUrl(): string {
+  // 1. Check environment variable first (takes precedence)
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    console.log('Using API URL from environment:', envUrl);
+    return envUrl;
+  }
+
+  // 2. Development: localhost
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    const localUrl = 'http://localhost:8000';
+    console.log('Using local development URL:', localUrl);
+    return localUrl;
+  }
+
+  // 3. Production: same origin with /api prefix (for same-server deployments)
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const port = window.location.port ? `:${window.location.port}` : '';
+  const productionUrl = `${protocol}//${hostname}${port}`;
+  console.log('Using production URL:', productionUrl);
+  return productionUrl;
+}
+
+export const API_BASE_URL = getApiBaseUrl();
 
 // API endpoints
 export const API_ENDPOINTS = {
