@@ -1,22 +1,10 @@
-# Railway.app Configuration
-# Specifies build and start commands for single-service deployment
+# Railway.app Configuration for Translation QA Tool
+# Single service deployment: Frontend + Backend unified
 
 [build]
-# Use Nix package manager for multi-language support
-builder = "nix"
-
-[build.nixpacks]
-# Explicit Python version
-python = "3.11"
-# Explicit Node.js version
-node = "18"
-# Allow pip packages from requirements.txt
-apt = ["pip"]
-
-[env]
-# Build frontend before starting
-NIXPACKS_BUILD = "npm install && npm run build && pip install -r requirements.txt"
+# Build command: Install dependencies and build React frontend
+cmd = "npm install && npm run build && pip install -r requirements.txt"
 
 [start]
-# Start the Flask server (serves frontend + API)
+# Start command: Run Flask backend server
 cmd = "python -m src.backend.api"
