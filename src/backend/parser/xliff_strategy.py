@@ -1,8 +1,15 @@
 """
 XLIFF Parser Strategy implementation.
 
-Supports XLIFF 1.2, 2.0, SDL Trados, and MemoQ variants.
+Supports XLIFF 1.2, 2.0, SDL Trados, MemoQ, and other proprietary variants.
 Implements BaseParser interface for unified file handling.
+
+Supported formats:
+- XLIFF 1.2/2.0 (Standard OASIS)
+- .sdlxliff (SDL Trados)
+- .mqxliff (MemoQ)
+- .mxliff (Memsource)
+- .xlf (Generic XLIFF)
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -16,16 +23,22 @@ from .models import Segment, SegmentStatus, SegmentMetadata, InlineTag
 
 class XLIFFStrategy(BaseParser):
     """
-    XLIFF file parser strategy.
+    Enhanced XLIFF file parser strategy.
 
-    Handles standard XLIFF 1.2/2.0 and proprietary variants
-    (SDL Trados .sdxliff, MemoQ .mqxliff).
+    Handles standard XLIFF 1.2/2.0 and ALL proprietary variants:
+    - SDL Trados (.sdlxliff)
+    - MemoQ (.mqxliff)
+    - Memsource (.mxliff)
+    - Generic XLIFF (.xlf)
+    - Others with proper namespace detection
     """
 
     # Namespace URIs
     XLIFF_NS_1_2 = "urn:oasis:names:tc:xliff:document:1.2"
     XLIFF_NS_2_0 = "urn:oasis:names:tc:xliff:document:2.0"
     TRADOS_NS = "http://www.sdl.com/Trados/API/ContentHandler/ContentHandlerTypes"
+    MEMOQ_NS = "MemoQ"
+    MEMSOURCE_NS = "Memsource"
 
     def __init__(self, file_path: Optional[str] = None):
         """Initialize XLIFF parser."""
@@ -88,7 +101,7 @@ class XLIFFStrategy(BaseParser):
         return self.segments
 
     def _detect_version_and_variant(self) -> None:
-        """Detect XLIFF version and proprietary variant."""
+        """Detect XLIFF version and all proprietary variants."""
         if self.root is None:
             raise ParsingError("No XML root element loaded")
 
@@ -105,19 +118,24 @@ class XLIFFStrategy(BaseParser):
             else:
                 self.xliff_version = "1.2"
 
-        # Detect variant
-        root_tag = self.root.tag
-        if "trados" in root_tag.lower() or "sdxliff" in root_tag.lower():
+        # Detect variant - comprehensive check
+        root_tag = self.root.tag.lower()
+        nsmap_str = " ".join(str(v).lower() for v in self.nsmap.values())
+        attrib_str = " ".join(str(k).lower() for k in self.root.attrib.keys())
+
+        # SDL Trados (.sdlxliff)
+        if ("trados" in root_tag or "sdxliff" in root_tag or
+            "sdl.com" in nsmap_str or "trados" in attrib_str):
             self.detected_variant = "trados"
-        elif any("sdl.com" in str(ns).lower() for ns in self.nsmap.values()):
-            self.detected_variant = "trados"
-        elif any("memoq" in str(ns).lower() for ns in self.nsmap.values()):
+        # MemoQ (.mqxliff)
+        elif "memoq" in nsmap_str or "memoq" in attrib_str or "memoq" in root_tag:
             self.detected_variant = "memoq"
+        # Memsource (.mxliff)
+        elif "memsource" in nsmap_str or "memsource" in attrib_str:
+            self.detected_variant = "memsource"
+        # Generic XLIFF variants
         else:
-            if any("sdl" in str(key).lower() for key in self.root.attrib.keys()):
-                self.detected_variant = "trados"
-            else:
-                self.detected_variant = "standard"
+            self.detected_variant = "standard"
 
     def _extract_segments(self, file_path: Optional[str] = None) -> List[Segment]:
         """Extract all segments from XLIFF."""
@@ -302,24 +320,62 @@ class XLIFFStrategy(BaseParser):
         return SegmentStatus.NEEDS_TRANSLATION
 
     def _extract_metadata(self, unit: etree._Element) -> SegmentMetadata:
-        """Extract metadata from unit."""
+        """Extract metadata from unit, including match percentages from all variants."""
         metadata = SegmentMetadata()
 
-        # Match quality
-        match_quality_str = unit.get("match-quality")
-        if match_quality_str:
-            try:
-                metadata.match_quality = int(match_quality_str.rstrip("%"))
-            except ValueError:
-                pass
+        # Try multiple match quality attributes (for different XLIFF variants)
+        match_quality_variants = [
+            "match-quality",      # Standard XLIFF
+            "percent-match",      # SDL Trados
+            "percentMatch",       # SDL Trados (camelCase)
+            "percent_match",      # Alternative
+            "mq:percent-match",   # MemoQ namespaced
+            "match_percent",      # Generic
+            "confidence",         # Some tools
+        ]
+
+        for attr_name in match_quality_variants:
+            match_quality_str = unit.get(attr_name)
+            if match_quality_str:
+                try:
+                    # Remove % symbol and convert to int
+                    match_str = match_quality_str.rstrip("%").strip()
+                    if match_str.isdigit():
+                        metadata.match_quality = int(match_str)
+                        break
+                except (ValueError, AttributeError):
+                    continue
+
+        # Try extracting from nested elements (some tools store it there)
+        if metadata.match_quality is None:
+            for elem in unit.iter():
+                if "match" in elem.tag.lower():
+                    text = "".join(elem.itertext()).strip()
+                    if text.isdigit():
+                        metadata.match_quality = int(text)
+                        break
 
         # Confirmation status
         metadata.confirmation_status = unit.get("confirmation-status")
 
-        # Other attributes
+        # Extract all custom attributes for advanced filtering
         for key, value in unit.attrib.items():
-            if "status" in key.lower() and key != "confirmation-status":
+            key_lower = key.lower()
+
+            if "status" in key_lower and key != "confirmation-status":
                 metadata.segment_status = value
+            elif "priority" in key_lower:
+                try:
+                    metadata.priority = int(value)
+                except ValueError:
+                    pass
+            elif "context" in key_lower:
+                metadata.context = value
+            elif "domain" in key_lower:
+                metadata.domain = value
+            elif not metadata.custom_attributes.get(key):
+                # Store other attributes for reference
+                metadata.custom_attributes[key] = value
 
         return metadata
 

@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Upload, Zap } from 'lucide-react'
+import { Upload, Zap, BarChart3 } from 'lucide-react'
 import './App.css'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import FileUpload from './components/FileUpload'
 import AIAnalysisPanel from './components/AIAnalysisPanel'
+import { ModernTranslationDashboard } from './components/ModernTranslationDashboard'
 
 interface Segment {
   segment_id: string
@@ -13,6 +14,23 @@ interface Segment {
   status: string
   source_language?: string
   target_language?: string
+  file_path?: string
+  source_plain_text?: string
+  target_plain_text?: string
+  source_inline_tags?: any[]
+  target_inline_tags?: any[]
+  metadata?: {
+    match_quality?: number
+    confirmation_status?: string
+    segment_status?: string
+    priority?: number
+    context?: string
+    domain?: string
+    custom_attributes?: Record<string, any>
+  }
+  xliff_version?: string
+  variant?: string
+  match_percentage?: number
 }
 
 function App() {
@@ -20,6 +38,7 @@ function App() {
   const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number } | null>(null)
   const [segments, setSegments] = useState<Segment[]>([])
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
+  const [showDashboard, setShowDashboard] = useState(false)
 
   const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
     if (!fileInput || !(fileInput instanceof File)) {
@@ -31,7 +50,7 @@ function App() {
     formData.append('file', file)
 
     try {
-      const response = await fetch('http://localhost:5000/api/files/parse', {
+      const response = await fetch('http://localhost:8000/api/files/parse', {
         method: 'POST',
         body: formData,
       })
@@ -40,7 +59,7 @@ function App() {
         const data = await response.json()
         setUploadedFile({ name: file.name, size: file.size })
 
-        // Map parsed segments to our interface
+        // Map parsed segments to our interface with match percentage
         const parsedSegments = data.segments.map((seg: any) => ({
           segment_id: seg.segment_id,
           source_text: seg.source_text,
@@ -48,12 +67,46 @@ function App() {
           status: seg.status,
           source_language: seg.source_language,
           target_language: seg.target_language,
+          file_path: seg.file_path,
+          source_plain_text: seg.source_plain_text,
+          target_plain_text: seg.target_plain_text,
+          source_inline_tags: seg.source_inline_tags,
+          target_inline_tags: seg.target_inline_tags,
+          metadata: seg.metadata,
+          xliff_version: seg.xliff_version,
+          variant: seg.variant,
+          match_percentage: seg.metadata?.match_quality || 0,
         }))
         setSegments(parsedSegments)
+        setShowDashboard(true)
       }
     } catch (error) {
       console.error('Error uploading file:', error)
     }
+  }
+
+  if (showDashboard && segments.length > 0) {
+    return (
+      <div className="w-full">
+        <div className="fixed top-4 left-4 z-50 flex gap-2">
+          <button
+            onClick={() => setShowDashboard(false)}
+            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition"
+          >
+            ← Geri
+          </button>
+          {segments.length > 0 && (
+            <button
+              onClick={() => setShowAIAnalysis(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
+            >
+              <Zap size={16} /> AI Analiz
+            </button>
+          )}
+        </div>
+        <ModernTranslationDashboard segments={segments} />
+      </div>
+    )
   }
 
   if (showAIAnalysis && segments.length > 0) {
@@ -115,13 +168,22 @@ function App() {
                 </div>
 
                 {segments.length > 0 && (
-                  <button
-                    onClick={() => setShowAIAnalysis(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
-                  >
-                    <Zap size={18} />
-                    AI Analiz Başlat
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowDashboard(true)}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+                    >
+                      <BarChart3 size={18} />
+                      Dashboard
+                    </button>
+                    <button
+                      onClick={() => setShowAIAnalysis(true)}
+                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
+                    >
+                      <Zap size={18} />
+                      AI Analiz Başlat
+                    </button>
+                  </div>
                 )}
               </div>
             )}
