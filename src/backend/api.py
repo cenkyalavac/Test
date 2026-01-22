@@ -10,17 +10,24 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import json
 import os
+import io
 from typing import List, Dict, Any, Optional
 
 from src.backend.parser.parser_factory import ParserFactory
 from src.backend.parser.models import Segment
+from src.backend.parser.package_extractor import PackageExtractor, PackageExtractorError
 from src.backend.qa import (
     AdvancedQAChecker, AIPredictionConfig, AIEngine,
     PredictorFactory, MockAIPredictor, ChecklistParser
 )
 
 # Security Configuration
-ALLOWED_FILE_EXTENSIONS = {'.json', '.xml', '.xliff', '.po', '.yaml', '.yml', '.csv', '.properties'}
+ALLOWED_FILE_EXTENSIONS = {
+    # Standard translation formats
+    '.json', '.xml', '.xliff', '.xlf', '.po', '.yaml', '.yml', '.csv', '.properties',
+    # Translation package formats
+    '.xlz', '.wsxz', '.sdlppx', '.sdlrpx', '.mqout', '.zip'
+}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 MAX_SEGMENTS = 10000  # Maximum segments to process
 
@@ -221,10 +228,14 @@ def get_configured_engines():
 @app.route("/api/files/parse", methods=["POST"])
 def parse_file():
     """
-    Parse a translation file (XLIFF, PO, JSON).
+    Parse a translation file or package.
+
+    Supports:
+    - Standard formats: XLIFF, PO, JSON, etc.
+    - Package formats: .xlz (Lionbridge), .wsxz (Trados), .sdlppx/.sdlrpx (Trados Project), .mqout (MemoQ)
 
     Security: Validates file type, size, and content.
-    Returns list of segments.
+    Returns list of segments merged from all files in package (if applicable).
     """
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -238,39 +249,109 @@ def parse_file():
 
     try:
         # Read file content
-        content = file.read()
+        file_content = file.read()
+        file.seek(0)
 
         # Secure filename for caching
         secure_name = secure_filename(file.filename)
         if not secure_name:
             secure_name = f"file_{id(file)}"
 
-        # Auto-detect and parse
-        factory = ParserFactory()
-        parser = factory.create_parser_for_file(file.filename, content)
-        segments = parser.parse()
+        # Check if it's a package file
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        is_package = PackageExtractor.is_package_file(file.filename)
 
-        # Limit segments
-        if len(segments) > MAX_SEGMENTS:
+        if is_package:
+            # Extract files from package
+            extractor = PackageExtractor()
+            file_stream = io.BytesIO(file_content)
+
+            try:
+                extracted_files, metadata = extractor.extract_translation_files(
+                    file_stream, file.filename
+                )
+            except PackageExtractorError as e:
+                return jsonify({"error": str(e)}), 400
+
+            # Parse each extracted file
+            all_segments = []
+            file_info_list = []
+
+            factory = ParserFactory()
+
+            for filename, content in extracted_files.items():
+                try:
+                    parser = factory.create_parser_for_file(filename, content)
+                    segments = parser.parse()
+
+                    # Add source file info to segments
+                    for seg in segments:
+                        seg.metadata.custom_attributes['_package_file'] = filename
+                        seg.metadata.custom_attributes['_package_format'] = metadata[filename].get('format', 'Unknown')
+
+                    all_segments.extend(segments)
+                    file_info_list.append({
+                        'filename': filename,
+                        'segment_count': len(segments),
+                        'format': metadata[filename].get('format'),
+                        'language': metadata[filename].get('language'),
+                    })
+
+                except Exception as e:
+                    app.logger.warning(f"Failed to parse {filename}: {e}")
+                    continue
+
+            # Limit segments
+            if len(all_segments) > MAX_SEGMENTS:
+                return jsonify({
+                    "error": f"Package contains too many segments ({len(all_segments)}). Maximum: {MAX_SEGMENTS}"
+                }), 413
+
+            # Cache segments
+            segments_cache[secure_name] = all_segments
+
+            # Convert to JSON-serializable format
+            segments_data = [seg.to_dict() for seg in all_segments]
+
             return jsonify({
-                "error": f"File contains too many segments ({len(segments)}). Maximum: {MAX_SEGMENTS}"
-            }), 413
+                "file_id": secure_name,
+                "filename": file.filename,
+                "is_package": True,
+                "package_format": file_ext,
+                "files_extracted": len(extracted_files),
+                "extracted_files": file_info_list,
+                "segment_count": len(all_segments),
+                "segments": segments_data
+            }), 200
 
-        # Cache segments for later use
-        segments_cache[secure_name] = segments
+        else:
+            # Standard file parsing (non-package)
+            factory = ParserFactory()
+            parser = factory.create_parser_for_file(file.filename, file_content)
+            segments = parser.parse()
 
-        # Convert segments to JSON-serializable format
-        segments_data = [seg.to_dict() for seg in segments]
+            # Limit segments
+            if len(segments) > MAX_SEGMENTS:
+                return jsonify({
+                    "error": f"File contains too many segments ({len(segments)}). Maximum: {MAX_SEGMENTS}"
+                }), 413
 
-        return jsonify({
-            "file_id": secure_name,
-            "filename": file.filename,
-            "segment_count": len(segments),
-            "segments": segments_data
-        }), 200
+            # Cache segments
+            segments_cache[secure_name] = segments
+
+            # Convert to JSON-serializable format
+            segments_data = [seg.to_dict() for seg in segments]
+
+            return jsonify({
+                "file_id": secure_name,
+                "filename": file.filename,
+                "is_package": False,
+                "segment_count": len(segments),
+                "segments": segments_data
+            }), 200
 
     except Exception as e:
-        app.logger.error(f"File parsing error: {type(e).__name__}")
+        app.logger.error(f"File parsing error: {type(e).__name__}: {str(e)}")
         return jsonify({"error": "Failed to parse file"}), 400
 
 
