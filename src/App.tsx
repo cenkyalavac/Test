@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Upload, Zap, BarChart3, AlertCircle } from 'lucide-react'
+import { Zap, AlertCircle } from 'lucide-react'
 import './App.css'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
@@ -147,7 +147,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-gray-900 text-white">
+      <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         {/* Sidebar */}
         <Sidebar isOpen={sidebarOpen} />
 
@@ -157,16 +157,34 @@ function App() {
           <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
           {/* Content Area */}
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto p-8">
             <div className="max-w-6xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">Translation QA Tool</h1>
-                <p className="text-gray-400">Find and verify errors in bilingual translation files</p>
+              {/* Hero Section */}
+              <div className="mb-12">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Translation QA Tool
+                  </span>
+                </div>
+                <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Professional Translation Quality Assurance
+                </h1>
+                <p className="text-lg text-slate-300 mb-2">
+                  Analyze translation files with 16+ QA checks, AI-powered predictions, and match percentage analysis
+                </p>
+                <p className="text-sm text-slate-400">
+                  Supports XLIFF, PO, JSON, and translation packages (SDLXLIFF, MemoQ, etc.)
+                </p>
               </div>
 
               {/* Error Message Display */}
               {error && (
-                <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-lg flex items-start gap-3">
+                <div className="mb-6 p-4 rounded-lg bg-red-900/20 border border-red-700 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <h3 className="font-semibold text-red-300">Error</h3>
@@ -174,7 +192,7 @@ function App() {
                   </div>
                   <button
                     onClick={() => setError(null)}
-                    className="text-red-400 hover:text-red-300"
+                    className="text-red-400 hover:text-red-300 flex-shrink-0"
                     aria-label="Dismiss error"
                   >
                     ×
@@ -183,56 +201,141 @@ function App() {
               )}
 
               {/* File Upload Area */}
-              <FileUpload
-                onFileSelect={(file) => {
-                  if (file && !isLoading) handleFileUpload(file)
-                }}
-              />
+              <div className="mb-12">
+                <FileUpload
+                  onFileSelect={(file) => {
+                    if (file && !isLoading) handleFileUpload(file)
+                  }}
+                />
+              </div>
 
-              {/* File Info Display */}
-              {uploadedFile && (
-                <div className="mt-8 bg-gray-800 border border-gray-700 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-blue-500" />
-                    Uploaded File Information
-                  </h2>
-                  <div className="grid grid-cols-3 gap-6 mb-6">
-                    <div>
-                      <p className="text-gray-400 text-sm mb-1">File Name</p>
-                      <p className="text-lg font-semibold text-white break-all">{uploadedFile.name}</p>
+              {/* File Info Display & Results */}
+              {uploadedFile ? (
+                <div className="space-y-6">
+                  {/* File Info Card */}
+                  <div className="rounded-xl border border-slate-700 bg-gradient-to-br from-slate-800/50 to-slate-700/50 p-6 backdrop-blur-sm">
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold text-white mb-2">File Information</h2>
+                        <p className="text-slate-300">Uploaded and analyzed: {uploadedFile.name}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setUploadedFile(null)
+                          setSegments([])
+                          setShowDashboard(false)
+                          setError(null)
+                        }}
+                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+                      >
+                        Upload New File
+                      </button>
                     </div>
-                    <div>
-                      <p className="text-gray-400 text-sm mb-1">File Size</p>
-                      <p className="text-lg font-semibold text-white">
-                        {(uploadedFile.size / 1024).toFixed(2)} KB
-                      </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      {/* File Name */}
+                      <div className="p-4 rounded-lg bg-slate-700/50 border border-slate-600">
+                        <p className="text-xs font-semibold text-slate-400 mb-1">FILE NAME</p>
+                        <p className="text-lg font-bold text-white break-all">{uploadedFile.name}</p>
+                      </div>
+
+                      {/* File Size */}
+                      <div className="p-4 rounded-lg bg-slate-700/50 border border-slate-600">
+                        <p className="text-xs font-semibold text-slate-400 mb-1">FILE SIZE</p>
+                        <p className="text-lg font-bold text-white">{(uploadedFile.size / 1024).toFixed(2)} KB</p>
+                      </div>
+
+                      {/* Segments Count */}
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-blue-900/30 to-purple-900/30 border border-blue-700/30">
+                        <p className="text-xs font-semibold text-blue-300 mb-1">SEGMENTS</p>
+                        <p className="text-lg font-bold text-blue-100">{segments.length}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-gray-400 text-sm mb-1">Segments</p>
-                      <p className="text-lg font-semibold text-white">{segments.length}</p>
-                    </div>
+
+                    {/* Action Buttons */}
+                    {segments.length > 0 && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          onClick={() => setShowDashboard(true)}
+                          disabled={isLoading}
+                          className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          Quality Dashboard
+                        </button>
+                        <button
+                          onClick={() => setShowAIAnalysis(true)}
+                          disabled={isLoading}
+                          className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Zap size={18} />
+                          AI Analysis
+                        </button>
+                      </div>
+                    )}
                   </div>
 
+                  {/* Quick Stats */}
                   {segments.length > 0 && (
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setShowDashboard(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading}
-                      >
-                        <BarChart3 size={18} />
-                        Dashboard
-                      </button>
-                      <button
-                        onClick={() => setShowAIAnalysis(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading}
-                      >
-                        <Zap size={18} />
-                        Start AI Analysis
-                      </button>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <QuickStatCard
+                        label="Total Segments"
+                        value={segments.length}
+                        icon="📊"
+                        color="from-blue-600 to-blue-700"
+                      />
+                      <QuickStatCard
+                        label="Translated"
+                        value={segments.filter(s => s.status === 'translated').length}
+                        icon="✓"
+                        color="from-green-600 to-green-700"
+                      />
+                      <QuickStatCard
+                        label="Avg Match %"
+                        value={Math.round(
+                          segments.reduce((sum, s) => sum + (s.match_percentage || 0), 0) / segments.length
+                        )}
+                        icon="📈"
+                        color="from-purple-600 to-purple-700"
+                      />
+                      <QuickStatCard
+                        label="Perfect Matches"
+                        value={segments.filter(s => s.match_percentage === 100).length}
+                        icon="✨"
+                        color="from-amber-600 to-amber-700"
+                      />
                     </div>
                   )}
+                </div>
+              ) : (
+                /* No File Uploaded - Show Info Panels */
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <InfoPanel
+                    title="🚀 Fast & Efficient"
+                    description="Process translation files instantly with our advanced QA engine"
+                  />
+                  <InfoPanel
+                    title="🔍 Comprehensive"
+                    description="16+ quality checks including spelling, consistency, formatting, and more"
+                  />
+                  <InfoPanel
+                    title="🤖 AI-Powered"
+                    description="AI predictions using GPT-4 and Gemini for advanced error analysis"
+                  />
+                  <InfoPanel
+                    title="📊 Match Analysis"
+                    description="Extract and filter by match percentages from all XLIFF variants"
+                  />
+                  <InfoPanel
+                    title="📦 Package Support"
+                    description="Direct support for SDLXLIFF, MemoQ, and other translation packages"
+                  />
+                  <InfoPanel
+                    title="🔒 Secure"
+                    description="All processing happens locally - your files are never stored or shared"
+                  />
                 </div>
               )}
             </div>
@@ -240,6 +343,41 @@ function App() {
         </div>
       </div>
     </ErrorBoundary>
+  )
+}
+
+interface QuickStatCardProps {
+  label: string
+  value: number | string
+  icon: string
+  color: string
+}
+
+function QuickStatCard({ label, value, icon, color }: QuickStatCardProps) {
+  return (
+    <div className={`rounded-lg bg-gradient-to-br ${color} p-6 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105`}>
+      <div className="flex items-center gap-3">
+        <div className="text-3xl">{icon}</div>
+        <div>
+          <p className="text-sm font-medium opacity-90">{label}</p>
+          <p className="text-3xl font-bold">{value}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface InfoPanelProps {
+  title: string
+  description: string
+}
+
+function InfoPanel({ title, description }: InfoPanelProps) {
+  return (
+    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 hover:border-slate-600 hover:bg-slate-700/50 transition-all group">
+      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">{title}</h3>
+      <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
+    </div>
   )
 }
 
