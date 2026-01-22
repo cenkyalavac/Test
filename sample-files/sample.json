@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "source_language": "en",
+    "target_language": "es",
+    "file_type": "json_translation"
+  },
+  "segments": [
+    {
+      "id": "json-001",
+      "source": "Settings",
+      "target": "Configuración",
+      "match_percentage": 100
+    },
+    {
+      "id": "json-002",
+      "source": "Profile information",
+      "target": "Información de perfil",
+      "match_percentage": 95
+    },
+    {
+      "id": "json-003",
+      "source": "Would you like to continue?",
+      "target": "¿Deseas continuar?",
+      "match_percentage": 85
+    },
+    {
+      "id": "json-004",
+      "source": "Error occurred during processing",
+      "target": "Se produjo un error durante el procesamiento",
+      "match_percentage": 75
+    },
+    {
+      "id": "json-005",
+      "source": "Please update your information",
+      "target": "Por favor actualiza tu información",
+      "match_percentage": 90
+    },
+    {
+      "id": "json-006",
+      "source": "New feature available",
+      "target": "Nueva función disponible",
+      "match_percentage": 100
+    },
+    {
+      "id": "json-007",
+      "source": "Check your email for confirmation",
+      "target": "Revisa tu correo para confirmar",
+      "match_percentage": 88
+    },
+    {
+      "id": "json-008",
+      "source": "Pending translation",
+      "target": "",
+      "match_percentage": 0
+    }
+  ]
+}

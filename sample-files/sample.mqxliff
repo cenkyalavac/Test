@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns:mq="MemoQ">
+  <file original="memoq-sample" source-language="en" target-language="fr" datatype="plaintext">
+    <header/>
+    <body>
+      <trans-unit id="mq-001" mq:percent-match="100">
+        <source>Database</source>
+        <target>Base de données</target>
+      </trans-unit>
+      <trans-unit id="mq-002" mq:percent-match="95">
+        <source>User Interface</source>
+        <target>Interface utilisateur</target>
+      </trans-unit>
+      <trans-unit id="mq-003" mq:percent-match="75">
+        <source>The application is running</source>
+        <target>L'application est en cours d'exécution</target>
+      </trans-unit>
+      <trans-unit id="mq-004" mq:percent-match="100">
+        <source>Exit</source>
+        <target>Quitter</target>
+      </trans-unit>
+      <trans-unit id="mq-005" mq:percent-match="88">
+        <source>Configuration completed</source>
+        <target>Configuration terminée</target>
+      </trans-unit>
+      <trans-unit id="mq-006" mq:percent-match="50">
+        <source>Please review the documentation</source>
+        <target>Veuillez exminer la documentation</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
