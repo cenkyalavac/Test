@@ -102,7 +102,7 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
             type="file"
             onChange={handleFileSelect}
             className="hidden"
-            accept={allFormats.join(',')}
+            accept=".xliff,.xlf,.xml,.json,.po,.yaml,.yml,.csv,.properties,.xlz,.wsxz,.sdlppx,.sdlrpx,.mqout,.sdlxliff,.mqxliff,.mxliff"
           />
 
           <div className="flex flex-col items-center justify-center">

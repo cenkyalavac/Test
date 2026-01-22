@@ -40,7 +40,7 @@ function App() {
   const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number } | null>(null)
   const [segments, setSegments] = useState<Segment[]>([])
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
-  const [showDashboard, setShowDashboard] = useState(false)
+  const [showDashboard, setShowDashboard] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
