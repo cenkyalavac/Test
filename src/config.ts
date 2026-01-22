@@ -5,28 +5,30 @@
 
 /**
  * Determine API base URL based on environment
- * - Production (same server): Empty string or '/' for relative paths
- * - Development (localhost): http://localhost:8000 for separate backend
- * - Environment override: VITE_API_URL takes precedence
+ * Priority order:
+ * 1. VITE_API_URL environment variable (set on Railway/Netlify)
+ * 2. localhost development (http://localhost:8000)
+ * 3. Same-origin production (empty string for relative paths)
  */
 function getApiBaseUrl(): string {
   // 1. Check environment variable first (takes precedence)
+  // For Railway: Set VITE_API_URL=https://backend-service.railway.app
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) {
-    console.log('Using API URL from environment:', envUrl);
+    console.log('✓ Using API URL from environment variable:', envUrl);
     return envUrl;
   }
 
   // 2. Development: localhost with separate backend server
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     const localUrl = 'http://localhost:8000';
-    console.log('Using local development URL:', localUrl);
+    console.log('✓ Using local development URL:', localUrl);
     return localUrl;
   }
 
-  // 3. Production: same server deployment (Railway, Netlify, etc.)
+  // 3. Production: same server deployment (single Railway service)
   // Use relative paths for API calls to same origin
-  console.log('Using same-origin API calls (relative paths)');
+  console.log('✓ Using same-origin API calls (relative paths)');
   return '';
 }
 

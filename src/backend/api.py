@@ -44,8 +44,17 @@ app = Flask(
     template_folder=DIST_FOLDER
 )
 
-# CORS configuration (simplified for same-origin deployment)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# CORS configuration (supports both single-service and dual-service deployments)
+# Single service: same origin (no CORS issues)
+# Dual service on Railway: allows cross-origin requests from frontend service
+CORS(app,
+     resources={r"/api/*": {
+         "origins": "*",
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "allow_headers": ["Content-Type", "Authorization"],
+         "expose_headers": ["Content-Type"],
+     }}
+)
 
 # Security headers
 @app.after_request
