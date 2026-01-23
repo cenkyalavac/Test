@@ -316,8 +316,11 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
 
       {/* Segments Table */}
       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg overflow-hidden">
-        <div className="p-6 border-b border-slate-700">
+        <div className="p-6 border-b border-slate-700 flex items-center justify-between">
           <h3 className="text-lg font-bold text-white">Segments</h3>
+          {segments.length > 10 && (
+            <p className="text-sm text-slate-400">Showing 10 of {segments.length} segments</p>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -402,7 +405,7 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
                     issue.severity === 'warning' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' :
                     'bg-blue-500/10 border-blue-500/20 text-blue-300'
                   }`}>
-                    <span className="font-semibold">{issue.type}</span>: {issue.message}
+                    <span className="font-semibold">{issue.check_type}</span>: {issue.message}
                   </div>
                 ))}
               </div>

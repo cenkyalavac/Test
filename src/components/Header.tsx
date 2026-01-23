@@ -20,11 +20,21 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-gray-700 rounded-lg transition">
-            <Bell className="w-5 h-5 text-gray-300" />
+          <button
+            disabled
+            className="p-2 opacity-50 cursor-not-allowed rounded-lg transition"
+            aria-label="Notifications (Coming soon)"
+            title="Feature coming soon"
+          >
+            <Bell className="w-5 h-5 text-gray-400" />
           </button>
-          <button className="p-2 hover:bg-gray-700 rounded-lg transition">
-            <Settings className="w-5 h-5 text-gray-300" />
+          <button
+            disabled
+            className="p-2 opacity-50 cursor-not-allowed rounded-lg transition"
+            aria-label="Settings (Coming soon)"
+            title="Feature coming soon"
+          >
+            <Settings className="w-5 h-5 text-gray-400" />
           </button>
         </div>
       </div>

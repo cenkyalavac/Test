@@ -50,6 +50,8 @@ function App() {
     // Reset state
     setError(null)
     setIsLoading(true)
+    setQAResults(null)
+    setQARunning(false)
 
     try {
       // Validate input
@@ -181,7 +183,6 @@ function App() {
       }
 
       const results = await response.json()
-      console.log('QA results:', results)
       setQAResults(results)
       setError(null) // Clear any previous errors
     } catch (err) {

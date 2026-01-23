@@ -38,13 +38,6 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))  # src/backend -> src -> root
 DIST_FOLDER = os.path.join(ROOT_DIR, 'dist')
 
-# Debug logging for Railway deployment
-print(f"DEBUG: Current Dir: {CURRENT_DIR}")
-print(f"DEBUG: Root Dir: {ROOT_DIR}")
-print(f"DEBUG: Dist Folder Path: {DIST_FOLDER}")
-print(f"DEBUG: Dist Folder Exists? {os.path.exists(DIST_FOLDER)}")
-if os.path.exists(DIST_FOLDER):
-    print(f"DEBUG: Dist Contents: {os.listdir(DIST_FOLDER)}")
 
 # Flask app configuration
 app = Flask(
@@ -308,6 +301,7 @@ def parse_file():
             # Parse each extracted file
             all_segments = []
             file_info_list = []
+            parse_errors = []
 
             for filename, content in extracted_files.items():
                 try:
@@ -330,7 +324,9 @@ def parse_file():
                     })
 
                 except Exception as e:
-                    app.logger.error(f"Failed to parse {filename} from package: {type(e).__name__}: {str(e)}")
+                    error_msg = f"{type(e).__name__}: {str(e)}"
+                    app.logger.error(f"Failed to parse {filename} from package: {error_msg}")
+                    parse_errors.append({'filename': filename, 'error': error_msg})
                     continue
 
             # Limit segments
@@ -339,13 +335,20 @@ def parse_file():
                     "error": f"Package contains too many segments ({len(all_segments)}). Maximum: {MAX_SEGMENTS}"
                 }), 413
 
+            # Check if we got any segments at all
+            if len(all_segments) == 0:
+                error_details = '\n'.join([f"- {e['filename']}: {e['error']}" for e in parse_errors])
+                return jsonify({
+                    "error": f"No segments could be extracted from package. Parsing errors:\n{error_details}"
+                }), 400
+
             # Cache segments
             segments_cache[secure_name] = all_segments
 
             # Convert to JSON-serializable format
             segments_data = [seg.to_dict() for seg in all_segments]
 
-            return jsonify({
+            response_data = {
                 "file_id": secure_name,
                 "filename": file.filename,
                 "is_package": True,
@@ -354,7 +357,16 @@ def parse_file():
                 "extracted_files": file_info_list,
                 "segment_count": len(all_segments),
                 "segments": segments_data
-            }), 200
+            }
+
+            # Include parse errors as warning if any files failed
+            if parse_errors:
+                response_data["warnings"] = {
+                    "parse_errors": parse_errors,
+                    "message": f"{len(parse_errors)} file(s) failed to parse but {len(all_segments)} segments were successfully extracted"
+                }
+
+            return jsonify(response_data), 200
 
         else:
             # Standard file parsing (non-package)
@@ -384,8 +396,9 @@ def parse_file():
             }), 200
 
     except Exception as e:
-        app.logger.error(f"File parsing error: {type(e).__name__}: {str(e)}")
-        return jsonify({"error": "Failed to parse file"}), 400
+        error_msg = f"{type(e).__name__}: {str(e)}"
+        app.logger.error(f"File parsing error: {error_msg}")
+        return jsonify({"error": f"Failed to parse file: {error_msg}"}), 400
 
 
 # ============================================================================

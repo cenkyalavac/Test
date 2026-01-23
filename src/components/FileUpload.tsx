@@ -10,6 +10,7 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -48,9 +49,11 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
   }
 
   const processFile = (file: File) => {
+    setValidationError(null)
+
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      alert(`File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB`)
+      setValidationError(`File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB`)
       return
     }
 
@@ -64,7 +67,7 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
     ] as any
 
     if (!allSupported.includes(ext)) {
-      alert(`File format not supported. Allowed: ${allSupported.join(', ')}`)
+      setValidationError(`File format not supported. Allowed: ${allSupported.join(', ')}`)
       return
     }
 
@@ -84,6 +87,25 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
 
   return (
     <div className="w-full space-y-12">
+      {/* Validation Error Toast */}
+      {validationError && (
+        <div className="fixed top-8 right-8 z-50 p-4 rounded-lg bg-red-900/90 border border-red-600 text-red-100 shadow-lg max-w-md animate-pulse">
+          <div className="flex items-start gap-3">
+            <span className="text-red-400">⚠</span>
+            <div className="flex-1">
+              <p className="font-semibold">Validation Error</p>
+              <p className="text-sm">{validationError}</p>
+            </div>
+            <button
+              onClick={() => setValidationError(null)}
+              className="text-red-400 hover:text-red-300"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section with Drag & Drop */}
       <div
         onDragOver={handleDragOver}

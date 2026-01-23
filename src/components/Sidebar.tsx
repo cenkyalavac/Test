@@ -34,7 +34,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.id}>
-              <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition whitespace-nowrap">
+              <button
+                disabled
+                className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 bg-gray-900/30 rounded-lg transition whitespace-nowrap opacity-60 cursor-not-allowed"
+                aria-label={`${item.label} (Coming soon)`}
+                title="Feature coming soon"
+              >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
                 <span>{item.label}</span>
               </button>
@@ -48,7 +53,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         <ul className="space-y-2">
           {bottomMenuItems.map((item) => (
             <li key={item.id}>
-              <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition whitespace-nowrap">
+              <button
+                disabled
+                className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 bg-gray-900/30 rounded-lg transition whitespace-nowrap opacity-60 cursor-not-allowed"
+                aria-label={`${item.label} (Coming soon)`}
+                title="Feature coming soon"
+              >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
                 <span>{item.label}</span>
               </button>

@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { Zap, RotateCw, Download } from 'lucide-react';
+import { Zap, RotateCw, Download, X } from 'lucide-react';
 import AISettings from './AISettings';
 import AIPredictionResults from './AIPredictionResults';
 import { API_ENDPOINTS } from '../config';
@@ -31,7 +31,7 @@ interface PredictionData {
   total_predictions: number;
 }
 
-export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({ segments }) => {
+export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({ segments, onClose }) => {
   const [selectedEngine, setSelectedEngine] = useState('mock');
   const [predictions, setPredictions] = useState<PredictionData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -102,12 +102,23 @@ export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({ segments }) =>
   return (
     <div className="w-full h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="p-6 bg-white border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Zap className="text-purple-600" size={28} />
-          AI Translation Analysis
-        </h1>
-        <p className="text-gray-600 mt-1">Powered by AI with MQM Typology Classification</p>
+      <div className="p-6 bg-white border-b border-gray-200 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Zap className="text-purple-600" size={28} />
+            AI Translation Analysis
+          </h1>
+          <p className="text-gray-600 mt-1">Powered by AI with MQM Typology Classification</p>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 transition p-2 rounded-lg hover:bg-gray-100"
+            aria-label="Close panel"
+          >
+            <X size={24} />
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
