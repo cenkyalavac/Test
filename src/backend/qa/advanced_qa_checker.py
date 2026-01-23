@@ -207,9 +207,30 @@ class AdvancedQAChecker:
             )
 
     def _check_number_mismatches(self, segment: Segment) -> None:
-        """Check for number mismatches between source and target."""
-        source_numbers = set(re.findall(r'\d+', segment.source_text))
-        target_numbers = set(re.findall(r'\d+', segment.target_text))
+        """
+        Check for number mismatches between source and target.
+
+        EXCEPTION: If source has AM/PM time format and target has 24-hour format,
+        don't flag as error. Example: "3 PM" -> "15:00" or "5 AM" -> "05:00"
+        """
+        source_text = segment.source_text
+        target_text = segment.target_text
+
+        # Check if this is a time format conversion (12h -> 24h)
+        # Pattern: "X AM/PM" or "X:YZ AM/PM" in source
+        time_12h_pattern = r'\d{1,2}(?::\d{2})?\s*(?:AM|PM|am|pm)'
+        time_24h_pattern = r'\d{1,2}:\d{2}'
+
+        source_has_12h = bool(re.search(time_12h_pattern, source_text))
+        target_has_24h = bool(re.search(time_24h_pattern, target_text))
+
+        # If this is a 12h -> 24h conversion, skip the number mismatch check
+        # because the numbers are expected to be different
+        if source_has_12h and target_has_24h:
+            return
+
+        source_numbers = set(re.findall(r'\d+', source_text))
+        target_numbers = set(re.findall(r'\d+', target_text))
 
         if source_numbers and source_numbers != target_numbers:
             missing = source_numbers - target_numbers
@@ -348,22 +369,39 @@ class AdvancedQAChecker:
 
     def _check_unpaired_quotes(self, segment: Segment) -> None:
         """
-        Check for unpaired quotation marks.
+        Check for unpaired quotation marks (smart quote detection).
 
-        CRITICAL: Only check actual quote characters.
-        Do NOT check commas, periods, or other punctuation.
+        CRITICAL: Only check actual quote characters at word boundaries.
+        Do NOT check apostrophes between letters (e.g., "Tomorrow's", "Teams'deki").
 
         Supported quotes:
-        - Straight quotes: " (double), ' (single)
+        - Straight quotes: " (double), ' (single - only at word boundaries)
         - Curly quotes: " " (left/right double), ' ' (left/right single)
         - Angle quotes: « » (guillemets)
 
-        EXCLUDED: Comma (,) is NEVER a quote character!
+        EXCLUDED:
+        - Comma (,) is NEVER a quote character!
+        - Apostrophes between two letters (e.g., "Ali'nin", "John's")
         """
+        # Helper function to count quotes excluding apostrophes between letters
+        def count_quotes_smart(text: str, quote: str) -> int:
+            """Count quotes, excluding apostrophes (') between two letters."""
+            if quote == "'":
+                # For apostrophes, exclude those between two letters
+                # Replace apostrophes between letters with placeholder, then count
+                # Pattern: letter + apostrophe + letter (e.g., Tomorrow's, Ali'nin)
+                apostrophe_pattern = r"[a-zA-Z]'[a-zA-Z]"
+                # Count apostrophes that are NOT between two letters
+                total_apostrophes = text.count("'")
+                apostrophes_between_letters = len(re.findall(apostrophe_pattern, text))
+                return total_apostrophes - apostrophes_between_letters
+            else:
+                return text.count(quote)
+
         # ONLY quotation marks - NO commas, NO other punctuation
         quote_types = [
             '"',   # Straight double quote
-            "'",   # Straight single quote / apostrophe
+            "'",   # Straight single quote / apostrophe (smart detection)
             '"',   # Left double quotation mark (curly)
             '"',   # Right double quotation mark (curly)
             ''',   # Left single quotation mark (curly)
@@ -373,8 +411,8 @@ class AdvancedQAChecker:
         ]
 
         for quote in quote_types:
-            source_count = segment.source_text.count(quote)
-            target_count = segment.target_text.count(quote)
+            source_count = count_quotes_smart(segment.source_text, quote)
+            target_count = count_quotes_smart(segment.target_text, quote)
 
             if source_count % 2 != 0 or target_count % 2 != 0:
                 self.issues.append(
@@ -404,22 +442,38 @@ class AdvancedQAChecker:
             )
 
     def _check_uppercase_mismatch(self, segment: Segment) -> None:
-        """Check for UPPERCASE word count mismatches."""
+        """
+        Check for UPPERCASE word count mismatches.
+
+        EXCEPTION: Skip short acronyms (2-3 letters) like AI, PM, ROI, Q3.
+        These are often translated differently (e.g., AI -> Yapay Zeka) so
+        their absence in target is expected and not an error.
+        """
         source_uppercase = set(re.findall(r'\b[A-Z]{2,}\b', segment.source_text))
         target_uppercase = set(re.findall(r'\b[A-Z]{2,}\b', segment.target_text))
 
         if source_uppercase and source_uppercase != target_uppercase:
             missing = source_uppercase - target_uppercase
-            if missing:
+
+            # Filter out short acronyms (2-3 letters)
+            # These are often translated (AI -> Yapay Zeka, PM -> Öğleden Sonra, etc.)
+            filtered_missing = set()
+            for acronym in missing:
+                # Only flag acronyms that are 4 or more letters
+                # Skip 2-3 letter acronyms as they're typically translated
+                if len(acronym) >= 4:
+                    filtered_missing.add(acronym)
+
+            if filtered_missing:
                 self.issues.append(
                     AdvancedQAIssue(
                         segment_id=segment.segment_id,
                         check_type=QACheckType.UPPERCASE_MISMATCH,
                         severity="warning",
-                        message=f"UPPERCASE words mismatch: missing {missing}",
+                        message=f"UPPERCASE words mismatch: missing {filtered_missing}",
                         source_text=segment.source_text,
                         target_text=segment.target_text,
-                        details={"missing": list(missing)},
+                        details={"missing": list(filtered_missing)},
                     )
                 )
 

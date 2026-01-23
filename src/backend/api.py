@@ -822,7 +822,7 @@ def predict_errors():
             })
 
         return jsonify({
-            "engine": engine,
+            "engine": ai_request.engine,
             "predictions": predictions_data,
             "total_predictions": len(predictions)
         }), 200
