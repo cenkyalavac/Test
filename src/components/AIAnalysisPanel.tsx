@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { Zap, RotateCw, Download } from 'lucide-react';
 import AISettings from './AISettings';
 import AIPredictionResults from './AIPredictionResults';
+import { API_ENDPOINTS } from '../config';
 
 interface Segment {
   segment_id: string;
@@ -47,7 +48,7 @@ export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({ segments }) =>
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/ai/predict', {
+      const response = await fetch(API_ENDPOINTS.PREDICT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

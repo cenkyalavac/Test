@@ -43,6 +43,8 @@ function App() {
   const [showDashboard, setShowDashboard] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [qaRunning, setQARunning] = useState(false)
+  const [qaResults, setQAResults] = useState<any>(null)
 
   const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
     // Reset state
@@ -150,6 +152,45 @@ function App() {
     }
   }
 
+  const handleRunQA = async () => {
+    if (segments.length === 0) {
+      setError('No segments to check')
+      return
+    }
+
+    setQARunning(true)
+    setError(null)
+
+    try {
+      const response = await fetch(API_ENDPOINTS.QA_CHECK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ segments: segments.map(s => ({
+          segment_id: s.segment_id,
+          source_text: s.source_text,
+          target_text: s.target_text,
+          status: s.status,
+          source_language: s.source_language,
+          target_language: s.target_language
+        }))}),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'QA check failed')
+      }
+
+      const results = await response.json()
+      setQAResults(results)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'QA check failed'
+      setError(msg)
+      console.error('QA error:', err)
+    } finally {
+      setQARunning(false)
+    }
+  }
+
   if (showDashboard && segments.length > 0) {
     return (
       <div className="w-full">
@@ -162,12 +203,21 @@ function App() {
             <span>Back</span>
           </button>
           {segments.length > 0 && (
-            <button
-              onClick={() => setShowAIAnalysis(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
-            >
-              <Zap size={16} /> AI Analiz
-            </button>
+            <>
+              <button
+                onClick={handleRunQA}
+                disabled={qaRunning}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {qaRunning ? 'QA Running...' : '▣ Run QA Check'}
+              </button>
+              <button
+                onClick={() => setShowAIAnalysis(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
+              >
+                <Zap size={16} /> AI Analiz
+              </button>
+            </>
           )}
         </div>
         <ModernTranslationDashboard segments={segments} />
