@@ -20,6 +20,10 @@ from src.backend.qa import (
     AdvancedQAChecker, AIPredictionConfig, AIEngine,
     PredictorFactory, MockAIPredictor, ChecklistParser
 )
+from src.backend.validation import (
+    QACheckRequest, AIPredictionRequest, SetAPIKeyRequest,
+    SetDefaultEngineRequest, validate_request
+)
 
 # Security Configuration
 ALLOWED_FILE_EXTENSIONS = {
@@ -440,36 +444,30 @@ def run_qa_check():
         app.logger.error(f"JSON parsing failed in run_qa_check: {type(e).__name__}: {str(e)}")
         return jsonify({"error": "Invalid JSON: Could not parse request"}), 400
 
-    segments_data = data.get("segments", [])
-    mode = data.get("mode", "balanced").lower()
-
-    # Validate mode
-    if mode not in ["fast", "balanced", "full"]:
-        return jsonify({"error": "Invalid mode. Must be: fast, balanced, or full"}), 400
-
-    # Validate segments
-    is_valid, error_msg = validate_segments(segments_data)
+    # Validate request against schema
+    is_valid, error_msg, qa_request = validate_request(data, QACheckRequest)
     if not is_valid:
-        return jsonify({"error": error_msg}), 400
+        app.logger.warning(f"Invalid QA request: {error_msg}")
+        return jsonify({"error": f"Invalid request: {error_msg}"}), 400
 
     try:
-        # Reconstruct segments
+        # Reconstruct segments from validated request
         from src.backend.parser.models import SegmentStatus
 
         segments = []
-        for seg_data in segments_data:
+        for seg_req in qa_request.segments:
             try:
-                status = SegmentStatus(seg_data.get("status", "unknown"))
+                status = SegmentStatus(seg_req.status)
             except ValueError:
                 status = SegmentStatus.UNKNOWN
 
             segment = Segment(
-                segment_id=seg_data.get("segment_id", ""),
-                source_text=seg_data.get("source_text", ""),
-                target_text=seg_data.get("target_text", ""),
+                segment_id=seg_req.segment_id,
+                source_text=seg_req.source_text,
+                target_text=seg_req.target_text,
                 status=status,
-                source_language=seg_data.get("source_language"),
-                target_language=seg_data.get("target_language"),
+                source_language=seg_req.source_language,
+                target_language=seg_req.target_language,
             )
             segments.append(segment)
 
@@ -477,10 +475,10 @@ def run_qa_check():
         checker = AdvancedQAChecker()
 
         # Configure based on mode
-        if mode in ["fast", "balanced"]:
+        if qa_request.mode in ["fast", "balanced"]:
             checker.spell_check_enabled = False
 
-        issues = checker.check_segments(segments, skip_consistency=mode=="fast")
+        issues = checker.check_segments(segments, skip_consistency=qa_request.mode=="fast")
 
         # Convert issues to JSON
         issues_data = []
@@ -501,7 +499,7 @@ def run_qa_check():
             "total_issues": len(issues),
             "issues": issues_data,
             "summary": summary,
-            "mode": mode
+            "mode": qa_request.mode.value
         }), 200
 
     except Exception as e:
@@ -533,65 +531,63 @@ def predict_errors():
         app.logger.error(f"JSON parsing failed in predict_errors: {type(e).__name__}: {str(e)}")
         return jsonify({"error": "Invalid JSON: Could not parse request"}), 400
 
-    segments_data = data.get("segments", [])
-    engine = data.get("engine", api_config["default_engine"]).lower()
+    # Use default engine if not provided
+    if "engine" not in data:
+        data["engine"] = api_config["default_engine"]
 
-    # Validate segments
-    is_valid, error_msg = validate_segments(segments_data)
+    # Validate request against schema
+    is_valid, error_msg, ai_request = validate_request(data, AIPredictionRequest)
     if not is_valid:
-        return jsonify({"error": error_msg}), 400
-
-    # Validate engine
-    if engine not in ["openai", "gemini", "mock"]:
-        return jsonify({"error": f"Unknown engine: {engine}. Must be: openai, gemini, mock"}), 400
+        app.logger.warning(f"Invalid AI prediction request: {error_msg}")
+        return jsonify({"error": f"Invalid request: {error_msg}"}), 400
 
     try:
-        # Reconstruct segments
+        # Reconstruct segments from validated request
         from src.backend.parser.models import SegmentStatus
 
         segments = []
-        for seg_data in segments_data:
+        for seg_req in ai_request.segments:
             try:
-                status = SegmentStatus(seg_data.get("status", "unknown"))
+                status = SegmentStatus(seg_req.status)
             except ValueError:
                 status = SegmentStatus.UNKNOWN
 
             segment = Segment(
-                segment_id=seg_data.get("segment_id", ""),
-                source_text=seg_data.get("source_text", ""),
-                target_text=seg_data.get("target_text", ""),
+                segment_id=seg_req.segment_id,
+                source_text=seg_req.source_text,
+                target_text=seg_req.target_text,
                 status=status,
-                source_language=seg_data.get("source_language"),
-                target_language=seg_data.get("target_language"),
+                source_language=seg_req.source_language,
+                target_language=seg_req.target_language,
             )
             segments.append(segment)
 
         # Create predictor based on engine
-        if engine == "openai":
+        if ai_request.engine == "openai":
             if not api_config["openai_key"]:
                 return jsonify({"error": "OpenAI API key not configured"}), 400
             config = AIPredictionConfig(
                 engine=AIEngine.OPENAI,
                 api_key=api_config["openai_key"]
             )
-        elif engine == "gemini":
+        elif ai_request.engine == "gemini":
             if not api_config["gemini_key"]:
                 return jsonify({"error": "Gemini API key not configured"}), 400
             config = AIPredictionConfig(
                 engine=AIEngine.GEMINI,
                 api_key=api_config["gemini_key"]
             )
-        elif engine == "mock":
+        elif ai_request.engine == "mock":
             config = AIPredictionConfig(
                 engine=AIEngine.OPENAI,  # Engine doesn't matter for mock
                 api_key="mock-key"
             )
             predictor = MockAIPredictor(config)
         else:
-            return jsonify({"error": f"Unknown engine: {engine}"}), 400
+            return jsonify({"error": f"Unknown engine: {ai_request.engine}"}), 400
 
         # Get predictor (or use mock)
-        if engine != "mock":
+        if ai_request.engine != "mock":
             predictor = PredictorFactory.create_predictor(config)
 
         # Generate predictions
