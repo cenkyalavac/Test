@@ -16,6 +16,7 @@ from typing import List, Dict, Any, Optional
 from src.backend.parser.parser_factory import ParserFactory
 from src.backend.parser.models import Segment
 from src.backend.parser.package_extractor import PackageExtractor, PackageExtractorError
+from src.backend.parser.zip_extractor import ZipExtractor, ZipExtractorError
 from src.backend.qa import (
     AdvancedQAChecker, AIPredictionConfig, AIEngine,
     PredictorFactory, MockAIPredictor, ChecklistParser
@@ -304,11 +305,100 @@ def parse_file():
         if not secure_name:
             secure_name = f"file_{id(file)}"
 
-        # Check if it's a package file
+        # Check file extension
         file_ext = os.path.splitext(file.filename)[1].lower()
+
+        # Check if it's a regular zip file (with nested zip support)
+        is_regular_zip = ZipExtractor.is_regular_zip(file.filename)
+
+        # Check if it's a proprietary package file
         is_package = PackageExtractor.is_package_file(file.filename)
 
-        if is_package:
+        if is_regular_zip:
+            # Handle regular zip files with recursive extraction
+            extractor = ZipExtractor()
+            file_stream = io.BytesIO(file_content)
+
+            try:
+                extracted_files, metadata = extractor.extract_files(
+                    file_stream, file.filename
+                )
+            except ZipExtractorError as e:
+                return jsonify({"error": str(e)}), 400
+
+            # Parse each extracted file
+            all_segments = []
+            file_info_list = []
+            parse_errors = []
+
+            for filename, content in extracted_files.items():
+                try:
+                    parser = ParserFactory.create_with_parser(filename, parser_engine)
+                    # Content is bytes from ZIP, decode to string for parsing
+                    content_str = content.decode('utf-8', errors='replace')
+                    segments = parser.parse_string(content_str, filename)
+
+                    # Add source file info to segments
+                    for seg in segments:
+                        seg.metadata.custom_attributes['_zip_file'] = filename
+                        seg.metadata.custom_attributes['_zip_depth'] = metadata[filename].get('depth', 0)
+                        if metadata[filename].get('nested_in'):
+                            seg.metadata.custom_attributes['_nested_in'] = metadata[filename]['nested_in']
+
+                    all_segments.extend(segments)
+                    file_info_list.append({
+                        'filename': filename,
+                        'segment_count': len(segments),
+                        'depth': metadata[filename].get('depth', 0),
+                        'nested_in': metadata[filename].get('nested_in'),
+                    })
+
+                except Exception as e:
+                    error_msg = f"{type(e).__name__}: {str(e)}"
+                    app.logger.error(f"Failed to parse {filename} from zip: {error_msg}")
+                    parse_errors.append({'filename': filename, 'error': error_msg})
+                    continue
+
+            # Limit segments
+            if len(all_segments) > MAX_SEGMENTS:
+                return jsonify({
+                    "error": f"Zip contains too many segments ({len(all_segments)}). Maximum: {MAX_SEGMENTS}"
+                }), 413
+
+            # Check if we got any segments at all
+            if len(all_segments) == 0:
+                error_details = '\n'.join([f"- {e['filename']}: {e['error']}" for e in parse_errors])
+                return jsonify({
+                    "error": f"No segments could be extracted from zip. Parsing errors:\n{error_details}"
+                }), 400
+
+            # Cache segments
+            segments_cache[secure_name] = all_segments
+
+            # Convert to JSON-serializable format
+            segments_data = [seg.to_dict() for seg in all_segments]
+
+            response_data = {
+                "file_id": secure_name,
+                "filename": file.filename,
+                "is_package": False,
+                "is_zip": True,
+                "files_extracted": len(extracted_files),
+                "extracted_files": file_info_list,
+                "segment_count": len(all_segments),
+                "segments": segments_data
+            }
+
+            # Include parse errors as warning if any files failed
+            if parse_errors:
+                response_data["warnings"] = {
+                    "parse_errors": parse_errors,
+                    "message": f"{len(parse_errors)} file(s) failed to parse but {len(all_segments)} segments were successfully extracted"
+                }
+
+            return jsonify(response_data), 200
+
+        elif is_package:
             # Extract files from package
             extractor = PackageExtractor()
             file_stream = io.BytesIO(file_content)

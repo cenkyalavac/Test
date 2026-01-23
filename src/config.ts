@@ -58,7 +58,7 @@ export const SUPPORTED_FORMATS = {
   XLIFF: ['.xliff', '.xlf', '.xml', '.sdlxliff', '.mqxliff', '.mxliff'],
   PO: ['.po'],
   JSON: ['.json'],
-  PACKAGES: ['.xlz', '.wsxz', '.sdlppx', '.sdlrpx', '.mqout'],
+  PACKAGES: ['.xlz', '.wsxz', '.sdlppx', '.sdlrpx', '.mqout', '.zip'],
 } as const;
 
 // Maximum file size (50MB)

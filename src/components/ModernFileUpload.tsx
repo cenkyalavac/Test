@@ -114,7 +114,7 @@ export default function ModernFileUpload({ onFileSelect }: ModernFileUploadProps
           type="file"
           onChange={handleFileSelect}
           style={{ display: 'none' }}
-          accept=".xliff,.xlf,.xml,.json,.po,.yaml,.yml,.csv,.properties,.xlz,.wsxz,.sdlppx,.sdlrpx,.mqout,.sdlxliff,.mqxliff,.mxliff"
+          accept=".xliff,.xlf,.xml,.json,.po,.yaml,.yml,.csv,.properties,.xlz,.wsxz,.sdlppx,.sdlrpx,.mqout,.sdlxliff,.mqxliff,.mxliff,.zip"
         />
 
         <div className={`transition-transform ${isDragging ? 'scale-110' : 'scale-100'}`}>
@@ -129,7 +129,7 @@ export default function ModernFileUpload({ onFileSelect }: ModernFileUploadProps
           </h3>
 
           <p className="text-slate-600 mb-4">
-            Select your translation file
+            Select your translation file or zip archive
           </p>
 
           <p className="text-xs text-slate-500">
