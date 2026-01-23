@@ -309,12 +309,12 @@ def parse_file():
             all_segments = []
             file_info_list = []
 
-            factory = ParserFactory()
-
             for filename, content in extracted_files.items():
                 try:
-                    parser = factory.create_parser_for_file(filename, content)
-                    segments = parser.parse()
+                    parser = ParserFactory.create(filename)
+                    # Content is bytes from ZIP, decode to string for parsing
+                    content_str = content.decode('utf-8', errors='replace')
+                    segments = parser.parse_string(content_str, filename)
 
                     # Add source file info to segments
                     for seg in segments:
@@ -330,7 +330,7 @@ def parse_file():
                     })
 
                 except Exception as e:
-                    app.logger.warning(f"Failed to parse {filename}: {e}")
+                    app.logger.error(f"Failed to parse {filename} from package: {type(e).__name__}: {str(e)}")
                     continue
 
             # Limit segments
@@ -358,9 +358,10 @@ def parse_file():
 
         else:
             # Standard file parsing (non-package)
-            factory = ParserFactory()
-            parser = factory.create_parser_for_file(file.filename, file_content)
-            segments = parser.parse()
+            parser = ParserFactory.create(file.filename)
+            # File content is bytes, decode to string for parsing
+            content_str = file_content.decode('utf-8', errors='replace')
+            segments = parser.parse_string(content_str, file.filename)
 
             # Limit segments
             if len(segments) > MAX_SEGMENTS:
