@@ -19,8 +19,8 @@ class QAMode(str, Enum):
 class SegmentRequest(BaseModel):
     """Segment data for QA/prediction."""
     segment_id: str = Field(..., min_length=1, description="Unique segment identifier")
-    source_text: str = Field(..., min_length=1, description="Source text")
-    target_text: str = Field(..., min_length=1, description="Target text")
+    source_text: str = Field(..., description="Source text")
+    target_text: str = Field(..., description="Target text")
     status: str = Field(..., description="Segment status")
     source_language: Optional[str] = Field(None, description="Source language code")
     target_language: Optional[str] = Field(None, description="Target language code")

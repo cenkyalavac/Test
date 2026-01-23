@@ -141,14 +141,16 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: qaMode,
-          segments: segments.map(s => ({
-            segment_id: s.segment_id,
-            source_text: s.source_text,
-            target_text: s.target_text,
-            status: s.status,
-            source_language: s.source_language,
-            target_language: s.target_language
-          }))
+          segments: segments
+            .filter(s => s.source_text?.trim() || s.target_text?.trim())
+            .map(s => ({
+              segment_id: s.segment_id,
+              source_text: s.source_text,
+              target_text: s.target_text,
+              status: s.status,
+              source_language: s.source_language,
+              target_language: s.target_language
+            }))
         }),
       })
 
