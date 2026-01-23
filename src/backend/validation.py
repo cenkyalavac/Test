@@ -56,6 +56,20 @@ class AIPredictionRequest(BaseModel):
         return segments
 
 
+class ParserEngine(str, Enum):
+    """Available parser engines."""
+    LXML = "lxml"
+    TRANSLATE_TOOLKIT = "translate-toolkit"
+
+
+class FileParseRequest(BaseModel):
+    """File parsing request with optional parser selection."""
+    parser_engine: ParserEngine = Field(
+        default=ParserEngine.LXML,
+        description="Parser engine to use (lxml or translate-toolkit)"
+    )
+
+
 class SetAPIKeyRequest(BaseModel):
     """API key configuration request."""
     engine: Literal["openai", "gemini"] = Field(..., description="AI engine")

@@ -20,6 +20,9 @@ function App() {
   const [qaResults, setQAResults] = useState<QAResults | null>(null)
   const [qaMode, setQaMode] = useState<QAMode>('balanced')
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [parserEngine, setParserEngine] = useState<'lxml' | 'translate-toolkit'>('lxml')
+  const [qaChecker, setQaChecker] = useState<'advanced' | 'comprehensive'>('advanced')
+  const [toolkitAvailable, setToolkitAvailable] = useState(false)
 
   // Cleanup abort controllers on unmount
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
@@ -29,6 +32,21 @@ function App() {
       abortControllersRef.current.forEach(controller => controller.abort())
       abortControllersRef.current.clear()
     }
+  }, [])
+
+  // Fetch parser configuration on mount
+  useEffect(() => {
+    const fetchParserConfig = async () => {
+      try {
+        const response = await fetch('/api/config/parsers')
+        const data = await response.json()
+        setToolkitAvailable(data.parsers['translate-toolkit'].available)
+      } catch (err) {
+        console.error('Error fetching parser config:', err)
+      }
+    }
+
+    fetchParserConfig()
   }, [])
 
   const handleFileUpload = async (file: File) => {
@@ -42,6 +60,7 @@ function App() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('parser_engine', parserEngine)
 
       // Make API request with timeout
       const controller = new AbortController()
@@ -141,6 +160,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: qaMode,
+          use_comprehensive: qaChecker === 'comprehensive',
           segments: segments
             .filter(s => s.source_text?.trim() || s.target_text?.trim())
             .map(s => ({
@@ -217,6 +237,54 @@ function App() {
                   {successMessage}
                 </div>
               )}
+
+              {/* Parser & QA Options */}
+              <div className="mb-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Parser Selection */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Parser Engine
+                    </label>
+                    <select
+                      value={parserEngine}
+                      onChange={(e) => setParserEngine(e.target.value as 'lxml' | 'translate-toolkit')}
+                      disabled={!toolkitAvailable && parserEngine === 'translate-toolkit'}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="lxml">lxml Parser (Default)</option>
+                      {toolkitAvailable && (
+                        <option value="translate-toolkit">Translate-Toolkit (Alternative)</option>
+                      )}
+                    </select>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {parserEngine === 'lxml'
+                        ? 'Fast and reliable XML parser'
+                        : 'Alternative parser for problematic files'}
+                    </p>
+                  </div>
+
+                  {/* QA Checker Selection */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      QA Checker
+                    </label>
+                    <select
+                      value={qaChecker}
+                      onChange={(e) => setQaChecker(e.target.value as 'advanced' | 'comprehensive')}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="advanced">Advanced QA (Default)</option>
+                      <option value="comprehensive">Comprehensive QA (Strict)</option>
+                    </select>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {qaChecker === 'advanced'
+                        ? '16 check types with spell-checking'
+                        : '10 check types with false-positive prevention'}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {isLoading ? (
                 <div className="text-center py-12">
@@ -298,23 +366,42 @@ function App() {
           </button>
         </div>
 
-        {/* QA Mode Selector */}
+        {/* QA Mode & Checker Selector */}
         {segments.length > 0 && (
-          <div className="mb-8 flex items-center gap-4">
-            <span className="text-sm font-semibold text-slate-700">QA Mode:</span>
-            {(['fast', 'balanced', 'full'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setQaMode(mode)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                  qaMode === mode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                }`}
-              >
-                {mode === 'fast' ? '⚡ Fast' : mode === 'balanced' ? '⚖ Balanced' : '🔍 Full'}
-              </button>
-            ))}
+          <div className="mb-8 space-y-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-semibold text-slate-700">QA Mode:</span>
+              {(['fast', 'balanced', 'full'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setQaMode(mode)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                    qaMode === mode
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  }`}
+                >
+                  {mode === 'fast' ? '⚡ Fast' : mode === 'balanced' ? '⚖ Balanced' : '🔍 Full'}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-semibold text-slate-700">Checker:</span>
+              {(['advanced', 'comprehensive'] as const).map((checker) => (
+                <button
+                  key={checker}
+                  onClick={() => setQaChecker(checker)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                    qaChecker === checker
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  }`}
+                >
+                  {checker === 'advanced' ? 'Advanced (16 checks)' : 'Comprehensive (10 checks)'}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

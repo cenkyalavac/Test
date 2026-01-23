@@ -6,12 +6,13 @@ Supports XLIFF, PO, JSON, and extensions for future formats.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 from .base_parser import BaseParser, UnsupportedFormatError
 from .xliff_strategy import XLIFFStrategy
 from .po_strategy import POStrategy
 from .json_strategy import JSONStrategy
+from .toolkit_parser import ToolkitParserFactory
 
 
 class ParserFactory:
@@ -109,3 +110,45 @@ class ParserFactory:
             return True
         except UnsupportedFormatError:
             return False
+
+    @staticmethod
+    def create_with_parser(
+        file_path: str,
+        parser_engine: Literal["lxml", "translate-toolkit"] = "lxml"
+    ) -> BaseParser:
+        """
+        Create parser with explicit engine selection.
+
+        Args:
+            file_path: Path to translation file
+            parser_engine: Parser engine to use ("lxml" or "translate-toolkit")
+
+        Returns:
+            Parser instance for the file type
+
+        Raises:
+            UnsupportedFormatError: If file format not supported or parser not available
+        """
+        file_format = ParserFactory.detect_format(file_path)
+
+        if parser_engine == "translate-toolkit":
+            # Only XLIFF files supported with translate-toolkit
+            if file_format == "xliff":
+                if not ToolkitParserFactory.is_available():
+                    raise ValueError(
+                        "translate-toolkit not installed. "
+                        "Install with: pip install translate-toolkit"
+                    )
+                return ToolkitParserFactory.create_parser()
+            else:
+                raise ValueError(
+                    f"translate-toolkit parser only supports XLIFF files, got {file_format}"
+                )
+
+        # Default to lxml parser
+        return ParserFactory.create(file_path)
+
+    @staticmethod
+    def is_toolkit_available() -> bool:
+        """Check if translate-toolkit is installed."""
+        return ToolkitParserFactory.is_available()

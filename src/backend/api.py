@@ -20,9 +20,10 @@ from src.backend.qa import (
     AdvancedQAChecker, AIPredictionConfig, AIEngine,
     PredictorFactory, MockAIPredictor, ChecklistParser
 )
+from src.backend.qa.comprehensive_qa_checker import ComprehensiveQAChecker
 from src.backend.validation import (
     QACheckRequest, AIPredictionRequest, SetAPIKeyRequest,
-    SetDefaultEngineRequest, validate_request
+    SetDefaultEngineRequest, validate_request, FileParseRequest, ParserEngine
 )
 
 # Security Configuration
@@ -272,6 +273,9 @@ def parse_file():
     - Standard formats: XLIFF, PO, JSON, etc.
     - Package formats: .xlz (Lionbridge), .wsxz (Trados), .sdlppx/.sdlrpx (Trados Project), .mqout (MemoQ)
 
+    Optional parameters:
+    - parser_engine: "lxml" (default) or "translate-toolkit" (for XLIFF files)
+
     Security: Validates file type, size, and content.
     Returns list of segments merged from all files in package (if applicable).
     """
@@ -279,6 +283,11 @@ def parse_file():
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files["file"]
+
+    # Get parser engine choice (optional, defaults to lxml)
+    parser_engine = request.form.get("parser_engine", "lxml")
+    if parser_engine not in ["lxml", "translate-toolkit"]:
+        return jsonify({"error": "Invalid parser_engine. Must be 'lxml' or 'translate-toolkit'"}), 400
 
     # Validate file
     is_valid, error_msg = validate_file(file)
@@ -318,7 +327,7 @@ def parse_file():
 
             for filename, content in extracted_files.items():
                 try:
-                    parser = ParserFactory.create(filename)
+                    parser = ParserFactory.create_with_parser(filename, parser_engine)
                     # Content is bytes from ZIP, decode to string for parsing
                     content_str = content.decode('utf-8', errors='replace')
                     segments = parser.parse_string(content_str, filename)
@@ -383,7 +392,7 @@ def parse_file():
 
         else:
             # Standard file parsing (non-package)
-            parser = ParserFactory.create(file.filename)
+            parser = ParserFactory.create_with_parser(file.filename, parser_engine)
             # File content is bytes, decode to string for parsing
             content_str = file_content.decode('utf-8', errors='replace')
             segments = parser.parse_string(content_str, file.filename)
@@ -451,10 +460,18 @@ def run_qa_check():
         return jsonify({"error": f"Invalid request: {error_msg}"}), 400
 
     try:
+        # Check if comprehensive QA checker is requested (from form or JSON body)
+        use_comprehensive = False
+        if request.form:
+            use_comprehensive = request.form.get("use_comprehensive", "false").lower() == "true"
+        if data and "use_comprehensive" in data:
+            use_comprehensive = data.get("use_comprehensive", False)
+
         # Reconstruct segments from validated request
         from src.backend.parser.models import SegmentStatus
 
         segments = []
+        segments_dict = []  # For comprehensive checker
         for seg_req in qa_request.segments:
             try:
                 status = SegmentStatus(seg_req.status)
@@ -470,22 +487,43 @@ def run_qa_check():
                 target_language=seg_req.target_language,
             )
             segments.append(segment)
+            segments_dict.append({
+                "segment_id": seg_req.segment_id,
+                "source_text": seg_req.source_text,
+                "target_text": seg_req.target_text,
+                "status": seg_req.status,
+                "source_language": seg_req.source_language,
+                "target_language": seg_req.target_language,
+            })
 
         # Run QA checks
-        checker = AdvancedQAChecker()
+        if use_comprehensive:
+            # Use comprehensive QA checker with strict rules
+            checker = ComprehensiveQAChecker()
+            issues_obj = checker.check_segments(segments_dict)
+            checker_type = "comprehensive"
+        else:
+            # Use legacy advanced QA checker
+            checker = AdvancedQAChecker()
 
-        # Configure based on mode
-        if qa_request.mode in ["fast", "balanced"]:
-            checker.spell_check_enabled = False
+            # Configure based on mode
+            if qa_request.mode in ["fast", "balanced"]:
+                checker.spell_check_enabled = False
 
-        issues = checker.check_segments(segments, skip_consistency=qa_request.mode=="fast")
+            issues_obj = checker.check_segments(segments, skip_consistency=qa_request.mode=="fast")
+            checker_type = "advanced"
 
         # Convert issues to JSON
         issues_data = []
-        for issue in issues:
+        for issue in issues_obj:
+            if hasattr(issue, 'check_type') and hasattr(issue.check_type, 'value'):
+                check_type_val = issue.check_type.value
+            else:
+                check_type_val = str(issue.check_type)
+
             issues_data.append({
                 "segment_id": issue.segment_id,
-                "check_type": issue.check_type.value,
+                "check_type": check_type_val,
                 "severity": issue.severity,
                 "message": issue.message,
                 "source_text": issue.source_text,
@@ -493,17 +531,93 @@ def run_qa_check():
                 "details": issue.details
             })
 
-        summary = checker.get_summary()
+        # Get summary
+        if use_comprehensive:
+            summary = {
+                "total_checks": len(issues_data),
+                "by_severity": {
+                    "error": len([i for i in issues_data if i["severity"] == "error"]),
+                    "warning": len([i for i in issues_data if i["severity"] == "warning"]),
+                    "info": len([i for i in issues_data if i["severity"] == "info"]),
+                },
+                "by_type": {}
+            }
+            for issue in issues_data:
+                check_type = issue["check_type"]
+                summary["by_type"][check_type] = summary["by_type"].get(check_type, 0) + 1
+        else:
+            summary = checker.get_summary()
 
         return jsonify({
-            "total_issues": len(issues),
+            "total_issues": len(issues_data),
             "issues": issues_data,
             "summary": summary,
-            "mode": qa_request.mode.value
+            "mode": qa_request.mode.value,
+            "checker_type": checker_type
         }), 200
 
     except Exception as e:
         return jsonify({"error": f"QA check failed: {str(e)}"}), 400
+
+
+# ============================================================================
+# Configuration & Utilities
+# ============================================================================
+
+@app.route("/api/config/parsers", methods=["GET"])
+def get_parser_info():
+    """Get information about available parsers."""
+    return jsonify({
+        "default_parser": "lxml",
+        "parsers": {
+            "lxml": {
+                "name": "lxml Parser (Default)",
+                "description": "Fast, reliable XML parser. Works with all XLIFF variants.",
+                "available": True,
+                "supported_formats": ["xliff", "sdxliff", "mqxliff", "mxliff", "xlf"]
+            },
+            "translate-toolkit": {
+                "name": "Translate-Toolkit Parser",
+                "description": "Alternative parser based on translate-toolkit library. Use if having issues with lxml.",
+                "available": ParserFactory.is_toolkit_available(),
+                "supported_formats": ["xliff"],
+                "installation": "pip install translate-toolkit"
+            }
+        }
+    }), 200
+
+
+@app.route("/api/config/qa-checkers", methods=["GET"])
+def get_qa_checker_info():
+    """Get information about available QA checkers."""
+    return jsonify({
+        "default_checker": "advanced",
+        "checkers": {
+            "advanced": {
+                "name": "Advanced QA Checker",
+                "description": "Comprehensive checks including spell-checking, consistency, and more.",
+                "check_types": 16,
+                "modes": ["fast", "balanced", "full"]
+            },
+            "comprehensive": {
+                "name": "Comprehensive QA Checker (Strict Rules)",
+                "description": "10 detailed check types with strict false-positive prevention. Recommended for production.",
+                "check_types": 10,
+                "checks": [
+                    "Untranslated segments",
+                    "Tag mismatches",
+                    "Number mismatches (locale-aware)",
+                    "URL/Email mismatches",
+                    "Double spaces",
+                    "Unpaired symbols",
+                    "Alphanumeric code mismatches",
+                    "Case sensitivity (CamelCase/UPPERCASE)",
+                    "Translation inconsistencies",
+                    "Terminology mismatches"
+                ]
+            }
+        }
+    }), 200
 
 
 # ============================================================================
