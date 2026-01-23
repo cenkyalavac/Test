@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { Download, Filter } from 'lucide-react';
-import type { Segment } from '../types';
+import type { Segment, QAResults } from '../types';
 
 interface SegmentWithMatch extends Segment {
   match_percentage?: number;
@@ -26,7 +26,12 @@ interface DashboardStats {
   perfectMatchCount: number;
 }
 
-export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]; qaResults?: any }> = ({ segments, qaResults }) => {
+interface ModernTranslationDashboardProps {
+  segments: SegmentWithMatch[];
+  qaResults?: QAResults | null;
+}
+
+export const ModernTranslationDashboard: React.FC<ModernTranslationDashboardProps> = ({ segments, qaResults }) => {
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     minMatch: 0,
     maxMatch: 100,
@@ -412,7 +417,7 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-slate-200 mb-3">Issues by Type</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {Object.entries(qaResults.summary.by_type).map(([type, count]: [string, any]) => (
+                {Object.entries(qaResults.summary.by_type).map(([type, count]) => (
                   <div key={type} className="bg-slate-700/30 p-3 rounded-lg border border-slate-600/50 text-center">
                     <p className="text-slate-400 text-xs font-medium uppercase">{type.replace(/_/g, ' ')}</p>
                     <p className="text-2xl font-bold text-white">{count}</p>
@@ -429,7 +434,7 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
                 Issue Details (Showing first 20 of {qaResults.issues.length})
               </h3>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {qaResults.issues.slice(0, 20).map((issue: any, idx: number) => (
+                {qaResults.issues.slice(0, 20).map((issue, idx) => (
                   <div key={idx} className={`p-4 rounded-lg border ${
                     issue.severity === 'error' ? 'bg-red-900/20 border-red-500/30' :
                     issue.severity === 'warning' ? 'bg-yellow-900/20 border-yellow-500/30' :
@@ -459,7 +464,7 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
                     )}
                     {issue.details && Object.keys(issue.details).length > 0 && (
                       <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-600/30">
-                        {Object.entries(issue.details).map(([key, value]: [string, any]) => (
+                        {Object.entries(issue.details).map(([key, value]) => (
                           <p key={key}><strong>{key}:</strong> {String(value).substring(0, 60)}</p>
                         ))}
                       </div>
