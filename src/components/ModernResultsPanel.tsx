@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { AlertCircle, CheckCircle, Info, Download, BarChart3 } from 'lucide-react'
+import { AlertCircle, CheckCircle, Info, Download, BarChart3, ChevronDown } from 'lucide-react'
 import type { QAResults, Segment } from '../types'
+import { QAChartsPanel } from './QAChartsPanel'
 
 interface ModernResultsPanelProps {
   segments: Segment[]
@@ -14,6 +15,7 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
   onClose
 }) => {
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'error' | 'warning' | 'info'>('all')
+  const [showCharts, setShowCharts] = useState(true)
 
   const filteredIssues = qaResults.issues.filter(issue => {
     if (selectedSeverity === 'all') return true
@@ -85,7 +87,26 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
             <p className="text-2xl font-bold text-blue-600">{qaResults.summary.by_severity.info || 0}</p>
           </div>
         </div>
+
+        {/* Charts Toggle Button */}
+        <div className="mt-6 flex justify-between items-center">
+          <button
+            onClick={() => setShowCharts(!showCharts)}
+            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-blue-50 text-slate-700 rounded-lg font-medium transition border border-slate-200"
+          >
+            <BarChart3 size={18} />
+            {showCharts ? 'Hide' : 'Show'} Detailed Charts
+            <ChevronDown size={16} className={`transition transform ${showCharts ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
       </div>
+
+      {/* Charts Section */}
+      {showCharts && (
+        <div className="border-b border-slate-200 p-8 bg-slate-50">
+          <QAChartsPanel qaResults={qaResults} />
+        </div>
+      )}
 
       {/* Issues by Type */}
       {qaResults.summary.by_type && Object.keys(qaResults.summary.by_type).length > 0 && (

@@ -1,5 +1,14 @@
 import React from 'react'
-import { CheckCircle, Zap, Shield, BarChart3, TrendingUp, Lock } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { HeroIllustration } from './IllustrationHero'
+import {
+  SpeedIllustration,
+  AccuracyIllustration,
+  SecurityIllustration,
+  IntegrationIllustration,
+  SupportIllustration,
+  AnalyticsIllustration
+} from './FeatureIllustrations'
 
 interface LandingPageProps {
   onGetStarted: () => void
@@ -50,6 +59,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             Get Started Now
           </button>
 
+          {/* Hero Illustration */}
+          <div className="mt-16 mb-12">
+            <HeroIllustration />
+          </div>
+
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 mt-20">
             <div>
@@ -75,70 +89,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <p className="text-slate-600">Everything you need for professional translation quality assurance</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-3 gap-8">
           {/* Feature 1 */}
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
-              <CheckCircle className="w-6 h-6 text-blue-600" />
-            </div>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">16+ Quality Checks</h4>
-            <p className="text-slate-600">
-              Comprehensive quality assurance including spelling, consistency, tags, numbers, URLs, and more.
+          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-amber-300 hover:shadow-lg transition group">
+            <SpeedIllustration />
+            <h4 className="text-lg font-bold text-slate-900 mb-3">Lightning Fast</h4>
+            <p className="text-slate-600 text-sm">
+              Process hundreds of segments in seconds. 3 performance modes: Fast, Balanced, or Full analysis.
             </p>
           </div>
 
           {/* Feature 2 */}
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-cyan-300 hover:shadow-lg transition">
-            <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
-              <Zap className="w-6 h-6 text-cyan-600" />
-            </div>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">AI Error Prediction</h4>
-            <p className="text-slate-600">
-              Advanced AI models (OpenAI GPT-4, Google Gemini) predict translation errors before they reach customers.
+          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-green-300 hover:shadow-lg transition group">
+            <AccuracyIllustration />
+            <h4 className="text-lg font-bold text-slate-900 mb-3">High Accuracy</h4>
+            <p className="text-slate-600 text-sm">
+              10+ strict quality checks with false-positive prevention. Comprehensive QA with AI support.
             </p>
           </div>
 
           {/* Feature 3 */}
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
-              <BarChart3 className="w-6 h-6 text-blue-600" />
-            </div>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">Detailed Analytics</h4>
-            <p className="text-slate-600">
-              Get actionable insights with detailed reports, statistics, and visualizations of quality metrics.
+          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-purple-300 hover:shadow-lg transition group">
+            <SecurityIllustration />
+            <h4 className="text-lg font-bold text-slate-900 mb-3">Secure & Private</h4>
+            <p className="text-slate-600 text-sm">
+              Enterprise-grade security. Files are processed securely and never permanently stored.
             </p>
           </div>
 
           {/* Feature 4 */}
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-cyan-300 hover:shadow-lg transition">
-            <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
-              <Shield className="w-6 h-6 text-cyan-600" />
-            </div>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">Secure & Private</h4>
-            <p className="text-slate-600">
-              Your translation files are processed securely and never stored on our servers. Your data stays private.
+          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition group">
+            <IntegrationIllustration />
+            <h4 className="text-lg font-bold text-slate-900 mb-3">Multi-Format</h4>
+            <p className="text-slate-600 text-sm">
+              XLIFF, PO, JSON, and translation packages (SDL, MemoQ, Lionbridge formats supported).
             </p>
           </div>
 
           {/* Feature 5 */}
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
-            </div>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">Multiple Formats</h4>
-            <p className="text-slate-600">
-              Support for XLIFF, PO, JSON, and translation packages (SDL, MemoQ, Lionbridge, and more).
+          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-pink-300 hover:shadow-lg transition group">
+            <SupportIllustration />
+            <h4 className="text-lg font-bold text-slate-900 mb-3">Expert Support</h4>
+            <p className="text-slate-600 text-sm">
+              Professional documentation, API access, and dedicated support for enterprise users.
             </p>
           </div>
 
           {/* Feature 6 */}
-          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-cyan-300 hover:shadow-lg transition">
-            <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
-              <Lock className="w-6 h-6 text-cyan-600" />
-            </div>
-            <h4 className="text-xl font-bold text-slate-900 mb-3">Enterprise Grade</h4>
-            <p className="text-slate-600">
-              Built for professional teams with high-volume translation operations and strict quality requirements.
+          <div className="p-8 bg-white rounded-2xl border border-slate-200 hover:border-cyan-300 hover:shadow-lg transition group">
+            <AnalyticsIllustration />
+            <h4 className="text-lg font-bold text-slate-900 mb-3">Deep Analytics</h4>
+            <p className="text-slate-600 text-sm">
+              Detailed charts, metrics, and reports. Track quality trends and improvements over time.
             </p>
           </div>
         </div>

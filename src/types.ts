@@ -55,6 +55,7 @@ export interface QAResults {
   issues: QAIssue[];
   summary: QASummary;
   mode: 'fast' | 'balanced' | 'full';
+  checker_type?: 'advanced' | 'comprehensive';
 }
 
 // API Response Types
