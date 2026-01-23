@@ -67,10 +67,6 @@ export default function ModernFileUpload({ onFileSelect }: ModernFileUploadProps
     onFileSelect(file)
   }
 
-  const handleClick = () => {
-    fileInputRef.current?.click()
-  }
-
   const allFormats: string[] = [
     ...SUPPORTED_FORMATS.XLIFF,
     ...SUPPORTED_FORMATS.PO,
@@ -104,13 +100,13 @@ export default function ModernFileUpload({ onFileSelect }: ModernFileUploadProps
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={handleClick}
-        className={`relative rounded-2xl cursor-pointer border-2 border-dashed transition-all p-16 text-center ${
+        onClick={() => fileInputRef.current?.click()}
+        className={`relative rounded-2xl cursor-pointer border-2 border-dashed transition-all p-16 text-center flex flex-col items-center justify-center ${
           isDragging
-            ? 'border-cyan-400 bg-cyan-900/20'
+            ? 'border-blue-400 bg-blue-50'
             : validationError
-            ? 'border-red-500 bg-red-900/20'
-            : 'border-slate-600 bg-slate-800/50 hover:border-blue-500 hover:bg-blue-900/20'
+            ? 'border-red-400 bg-red-50'
+            : 'border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50'
         }`}
       >
         <input
@@ -123,20 +119,20 @@ export default function ModernFileUpload({ onFileSelect }: ModernFileUploadProps
 
         <div className={`transition-transform ${isDragging ? 'scale-110' : 'scale-100'}`}>
           <div className="flex justify-center mb-4">
-            <div className={`p-4 rounded-full ${isDragging ? 'bg-cyan-500/30' : 'bg-slate-700'}`}>
-              <Upload className={`w-8 h-8 ${isDragging ? 'text-cyan-400' : 'text-blue-400'}`} />
+            <div className={`p-4 rounded-full ${isDragging ? 'bg-blue-200' : 'bg-blue-100'}`}>
+              <Upload className={`w-8 h-8 ${isDragging ? 'text-blue-600' : 'text-blue-500'}`} />
             </div>
           </div>
 
-          <h3 className="text-2xl font-bold text-white mb-2">
-            {isDragging ? 'Drop your file here' : 'Upload Your Translation File'}
+          <h3 className="text-2xl font-bold text-slate-800 mb-3">
+            {isDragging ? 'Drop your file here' : 'Click or drag to upload'}
           </h3>
 
-          <p className="text-slate-300 mb-6">
-            Drag and drop your file or click to browse
+          <p className="text-slate-600 mb-4">
+            Select your translation file
           </p>
 
-          <p className="text-sm text-slate-400">
+          <p className="text-xs text-slate-500">
             Maximum file size: {MAX_FILE_SIZE / 1024 / 1024}MB
           </p>
         </div>
@@ -144,14 +140,14 @@ export default function ModernFileUpload({ onFileSelect }: ModernFileUploadProps
 
       {/* Supported Formats */}
       <div>
-        <p className="text-sm font-semibold text-slate-300 mb-4 block text-center">
+        <p className="text-sm font-semibold text-slate-700 mb-4 block text-center">
           Supported Formats
         </p>
         <div className="flex flex-wrap gap-2 justify-center">
           {allFormats.map((format) => (
             <span
               key={format}
-              className="px-3 py-1 badge badge-outline badge-lg text-slate-300"
+              className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-medium rounded-full"
             >
               {format}
             </span>
@@ -161,26 +157,26 @@ export default function ModernFileUpload({ onFileSelect }: ModernFileUploadProps
 
       {/* Benefits */}
       <div className="grid md:grid-cols-3 gap-6 pt-4">
-        <div className="card bg-slate-800/50 border border-slate-700 text-center p-6">
+        <div className="bg-blue-50 border border-blue-200 text-center p-6 rounded-lg">
           <div className="flex justify-center mb-3">
-            <CheckCircle className="w-6 h-6 text-emerald-400" />
+            <CheckCircle className="w-6 h-6 text-blue-600" />
           </div>
-          <h4 className="font-semibold text-white mb-1">Fast Processing</h4>
-          <p className="text-sm text-slate-400">Get results in seconds</p>
+          <h4 className="font-semibold text-slate-800 mb-1">Fast Processing</h4>
+          <p className="text-sm text-slate-600">Get results in seconds</p>
         </div>
-        <div className="card bg-slate-800/50 border border-slate-700 text-center p-6">
+        <div className="bg-green-50 border border-green-200 text-center p-6 rounded-lg">
           <div className="flex justify-center mb-3">
-            <CheckCircle className="w-6 h-6 text-blue-400" />
+            <CheckCircle className="w-6 h-6 text-green-600" />
           </div>
-          <h4 className="font-semibold text-white mb-1">Secure</h4>
-          <p className="text-sm text-slate-400">Your data is never stored</p>
+          <h4 className="font-semibold text-slate-800 mb-1">Secure</h4>
+          <p className="text-sm text-slate-600">Your data is never stored</p>
         </div>
-        <div className="card bg-slate-800/50 border border-slate-700 text-center p-6">
+        <div className="bg-purple-50 border border-purple-200 text-center p-6 rounded-lg">
           <div className="flex justify-center mb-3">
-            <CheckCircle className="w-6 h-6 text-cyan-400" />
+            <CheckCircle className="w-6 h-6 text-purple-600" />
           </div>
-          <h4 className="font-semibold text-white mb-1">Reliable</h4>
-          <p className="text-sm text-slate-400">Enterprise-grade processing</p>
+          <h4 className="font-semibold text-slate-800 mb-1">Reliable</h4>
+          <p className="text-sm text-slate-600">Enterprise-grade processing</p>
         </div>
       </div>
     </div>

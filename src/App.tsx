@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Zap, RotateCcw } from 'lucide-react'
+import { Zap, RotateCcw, AlertCircle, CheckCircle } from 'lucide-react'
 import './App.css'
 import ModernFileUpload from './components/ModernFileUpload'
 import { LandingPagePro } from './components/LandingPagePro'
-import { ModernLayout } from './components/ModernLayout'
 import { ModernResultsPanel } from './components/ModernResultsPanel'
 import AIAnalysisPanel from './components/AIAnalysisPanel'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -24,7 +23,6 @@ function App() {
   const [qaChecker, setQaChecker] = useState<'advanced' | 'comprehensive'>('advanced')
   const [toolkitAvailable, setToolkitAvailable] = useState(false)
 
-  // Cleanup abort controllers on unmount
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
 
   useEffect(() => {
@@ -34,7 +32,6 @@ function App() {
     }
   }, [])
 
-  // Fetch parser configuration on mount
   useEffect(() => {
     const fetchParserConfig = async () => {
       try {
@@ -50,7 +47,6 @@ function App() {
   }, [])
 
   const handleFileUpload = async (file: File) => {
-    // Reset state
     setError(null)
     setSuccessMessage(null)
     setIsLoading(true)
@@ -62,7 +58,6 @@ function App() {
       formData.append('file', file)
       formData.append('parser_engine', parserEngine)
 
-      // Make API request with timeout
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000)
 
@@ -111,7 +106,6 @@ function App() {
         throw new Error('No translatable segments found in file.')
       }
 
-      // Map segments
       const parsedSegments: Segment[] = data.segments.map((seg: any) => ({
         segment_id: seg.segment_id ?? 'unknown',
         source_text: seg.source_text ?? '',
@@ -134,7 +128,6 @@ function App() {
       setSegments(parsedSegments)
       setSuccessMessage(`✓ Successfully uploaded ${file.name} with ${parsedSegments.length} segments`)
 
-      // Auto-clear success message after 5 seconds
       setTimeout(() => setSuccessMessage(null), 5000)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
@@ -191,10 +184,9 @@ function App() {
     }
   }
 
-  // Show AI Analysis
   if (showAIAnalysis && segments.length > 0) {
     return (
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-slate-100">
         <AIAnalysisPanel
           segments={segments}
           onClose={() => setShowAIAnalysis(false)}
@@ -203,13 +195,11 @@ function App() {
     )
   }
 
-  // Show landing page
   if (segments.length === 0) {
     return (
       <ErrorBoundary>
         <LandingPagePro
           onGetStarted={() => {
-            // Scroll to upload section
             const uploadSection = document.getElementById('upload-section')
             if (uploadSection) {
               uploadSection.scrollIntoView({ behavior: 'smooth' })
@@ -217,67 +207,63 @@ function App() {
           }}
         />
 
-        {/* Upload Section - Hidden until user clicks "Get Started" */}
-        <div id="upload-section" className="min-h-screen bg-slate-50 px-6 py-20">
-          <div className="max-w-3xl mx-auto">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">Upload Your File</h2>
-              <p className="text-slate-600">Drag and drop your translation file to get started</p>
+        <div id="upload-section" className="min-h-screen bg-slate-50 px-6 py-16">
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-12">
+              <h2 className="text-4xl font-bold text-slate-800 mb-3">Upload Your File</h2>
+              <p className="text-lg text-slate-600">Drag and drop your translation file or click to browse</p>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-8">
+            <div className="bg-white rounded-2xl shadow-lg p-10 border border-slate-100">
               {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                  {error}
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">{error}</div>
                 </div>
               )}
 
               {successMessage && (
-                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-                  {successMessage}
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">{successMessage}</div>
                 </div>
               )}
 
               {/* Parser & QA Options */}
-              <div className="mb-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="mb-10 p-6 bg-slate-50 rounded-xl border border-slate-200">
+                <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wide">Processing Options</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Parser Selection */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Parser Engine
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Parser Engine</label>
                     <select
                       value={parserEngine}
                       onChange={(e) => setParserEngine(e.target.value as 'lxml' | 'translate-toolkit')}
                       disabled={!toolkitAvailable && parserEngine === 'translate-toolkit'}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="lxml">lxml Parser (Default)</option>
                       {toolkitAvailable && (
                         <option value="translate-toolkit">Translate-Toolkit (Alternative)</option>
                       )}
                     </select>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-2">
                       {parserEngine === 'lxml'
                         ? 'Fast and reliable XML parser'
                         : 'Alternative parser for problematic files'}
                     </p>
                   </div>
 
-                  {/* QA Checker Selection */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      QA Checker
-                    </label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">QA Checker</label>
                     <select
                       value={qaChecker}
                       onChange={(e) => setQaChecker(e.target.value as 'advanced' | 'comprehensive')}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="advanced">Advanced QA (Default)</option>
                       <option value="comprehensive">Comprehensive QA (Strict)</option>
                     </select>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-2">
                       {qaChecker === 'advanced'
                         ? '16 check types with spell-checking'
                         : '10 check types with false-positive prevention'}
@@ -287,7 +273,7 @@ function App() {
               </div>
 
               {isLoading ? (
-                <div className="text-center py-12">
+                <div className="text-center py-16">
                   <div className="inline-block">
                     <div className="animate-spin">
                       <Zap className="w-12 h-12 text-blue-600" />
@@ -305,146 +291,161 @@ function App() {
     )
   }
 
-  // Show file results page
   return (
     <ErrorBoundary>
-      <ModernLayout
-        title="Quality Analysis"
-        subtitle={uploadedFile ? `File: ${uploadedFile.name}` : undefined}
-      >
-        {/* Messages */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-3">
-            <span>⚠</span>
-            <div className="flex-1">{error}</div>
-            <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
-              ×
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6 py-10">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-800">Quality Analysis</h1>
+                {uploadedFile && (
+                  <p className="text-slate-600 mt-1">File: <span className="font-semibold text-slate-800">{uploadedFile.name}</span></p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setSegments([])
+                  setUploadedFile(null)
+                  setQAResults(null)
+                  setQaMode('balanced')
+                }}
+                className="flex items-center gap-2 px-6 py-2 bg-white text-slate-700 rounded-lg font-semibold hover:bg-slate-100 transition border border-slate-300"
+              >
+                <RotateCcw size={18} />
+                Upload New
+              </button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">{error}</div>
+              <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700 font-bold">
+                ×
+              </button>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">{successMessage}</div>
+              <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700 font-bold">
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Control Buttons */}
+          <div className="mb-8 flex flex-wrap gap-4 items-center">
+            <button
+              onClick={handleRunQA}
+              disabled={qaRunning || segments.length === 0}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+            >
+              <Zap size={20} />
+              {qaRunning ? 'QA Running...' : 'Run QA Check'}
+            </button>
+
+            <button
+              onClick={() => setShowAIAnalysis(true)}
+              disabled={segments.length === 0}
+              className="px-6 py-3 bg-white text-slate-700 rounded-lg font-semibold hover:bg-slate-100 transition disabled:opacity-50 disabled:cursor-not-allowed border border-slate-300"
+            >
+              AI Analysis
             </button>
           </div>
-        )}
 
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 flex items-start gap-3">
-            <span>✓</span>
-            <div className="flex-1">{successMessage}</div>
-            <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700">
-              ×
-            </button>
-          </div>
-        )}
+          {/* QA Mode & Checker Selector */}
+          {segments.length > 0 && (
+            <div className="mb-8 bg-white rounded-xl shadow-md p-6 border border-slate-100">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-sm font-bold text-slate-800 mb-3 uppercase tracking-wide">QA Mode</label>
+                  <div className="flex gap-2">
+                    {(['fast', 'balanced', 'full'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setQaMode(mode)}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                          qaMode === mode
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
+                        }`}
+                      >
+                        {mode === 'fast' ? '⚡ Fast' : mode === 'balanced' ? '⚖ Balanced' : '🔍 Full'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-        {/* Control Buttons */}
-        <div className="mb-8 flex flex-wrap gap-4 items-center">
-          <button
-            onClick={handleRunQA}
-            disabled={qaRunning || segments.length === 0}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Zap size={20} />
-            {qaRunning ? 'QA Running...' : 'Run QA Check'}
-          </button>
+                <div>
+                  <label className="block text-sm font-bold text-slate-800 mb-3 uppercase tracking-wide">Checker Type</label>
+                  <div className="flex gap-2">
+                    {(['advanced', 'comprehensive'] as const).map((checker) => (
+                      <button
+                        key={checker}
+                        onClick={() => setQaChecker(checker)}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                          qaChecker === checker
+                            ? 'bg-cyan-600 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
+                        }`}
+                      >
+                        {checker === 'advanced' ? 'Advanced' : 'Comprehensive'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-          <button
-            onClick={() => setShowAIAnalysis(true)}
-            disabled={segments.length === 0}
-            className="px-6 py-3 bg-slate-200 text-slate-900 rounded-lg font-semibold hover:bg-slate-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            AI Analysis
-          </button>
+          {/* Results */}
+          {qaResults && (
+            <ModernResultsPanel
+              segments={segments}
+              qaResults={qaResults}
+              onClose={() => setQAResults(null)}
+            />
+          )}
 
-          <button
-            onClick={() => {
-              setSegments([])
-              setUploadedFile(null)
-              setQAResults(null)
-              setQaMode('balanced')
-            }}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition ml-auto"
-          >
-            <RotateCcw size={20} />
-            Upload New File
-          </button>
+          {/* Segments Summary */}
+          {!qaResults && segments.length > 0 && (
+            <div className="bg-white rounded-xl shadow-md p-8 border border-slate-100">
+              <h3 className="text-2xl font-bold text-slate-800 mb-6">Uploaded Segments</h3>
+              <div className="grid md:grid-cols-4 gap-6">
+                <div className="p-6 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                  <p className="text-sm text-slate-600 font-semibold mb-2">Total Segments</p>
+                  <p className="text-3xl font-bold text-blue-700">{segments.length}</p>
+                </div>
+                <div className="p-6 bg-green-50 rounded-lg border-l-4 border-green-500">
+                  <p className="text-sm text-slate-600 font-semibold mb-2">Translated</p>
+                  <p className="text-3xl font-bold text-green-700">
+                    {segments.filter(s => s.status === 'translated').length}
+                  </p>
+                </div>
+                <div className="p-6 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+                  <p className="text-sm text-slate-600 font-semibold mb-2">Needs Review</p>
+                  <p className="text-3xl font-bold text-yellow-700">
+                    {segments.filter(s => s.status === 'needs-review').length}
+                  </p>
+                </div>
+                <div className="p-6 bg-slate-100 rounded-lg border-l-4 border-slate-500">
+                  <p className="text-sm text-slate-600 font-semibold mb-2">File Size</p>
+                  <p className="text-3xl font-bold text-slate-700">
+                    {uploadedFile ? (uploadedFile.size / 1024 / 1024).toFixed(2) : 0}MB
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* QA Mode & Checker Selector */}
-        {segments.length > 0 && (
-          <div className="mb-8 space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-semibold text-slate-700">QA Mode:</span>
-              {(['fast', 'balanced', 'full'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setQaMode(mode)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                    qaMode === mode
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                  }`}
-                >
-                  {mode === 'fast' ? '⚡ Fast' : mode === 'balanced' ? '⚖ Balanced' : '🔍 Full'}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-semibold text-slate-700">Checker:</span>
-              {(['advanced', 'comprehensive'] as const).map((checker) => (
-                <button
-                  key={checker}
-                  onClick={() => setQaChecker(checker)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                    qaChecker === checker
-                      ? 'bg-cyan-600 text-white'
-                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                  }`}
-                >
-                  {checker === 'advanced' ? 'Advanced (16 checks)' : 'Comprehensive (10 checks)'}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Results */}
-        {qaResults && (
-          <ModernResultsPanel
-            segments={segments}
-            qaResults={qaResults}
-            onClose={() => setQAResults(null)}
-          />
-        )}
-
-        {/* Segments Summary */}
-        {!qaResults && segments.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-8">
-            <h3 className="text-2xl font-bold text-slate-900 mb-6">Uploaded Segments</h3>
-            <div className="grid md:grid-cols-4 gap-6">
-              <div className="p-6 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-700 font-semibold mb-2">Total Segments</p>
-                <p className="text-3xl font-bold text-blue-900">{segments.length}</p>
-              </div>
-              <div className="p-6 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-green-700 font-semibold mb-2">Translated</p>
-                <p className="text-3xl font-bold text-green-900">
-                  {segments.filter(s => s.status === 'translated').length}
-                </p>
-              </div>
-              <div className="p-6 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-sm text-yellow-700 font-semibold mb-2">Needs Review</p>
-                <p className="text-3xl font-bold text-yellow-900">
-                  {segments.filter(s => s.status === 'needs-review').length}
-                </p>
-              </div>
-              <div className="p-6 bg-slate-50 rounded-lg border border-slate-200">
-                <p className="text-sm text-slate-700 font-semibold mb-2">File Size</p>
-                <p className="text-3xl font-bold text-slate-900">
-                  {uploadedFile ? (uploadedFile.size / 1024 / 1024).toFixed(2) : 0}MB
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </ModernLayout>
+      </div>
     </ErrorBoundary>
   )
 }
