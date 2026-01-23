@@ -197,25 +197,29 @@ class MultiLanguageChecker:
         self.checkers: Dict[SupportedLanguage, MultiLanguageSpellChecker] = {}
         self.default_language = SupportedLanguage.ENGLISH
 
-    def get_checker(self, language: SupportedLanguage) -> MultiLanguageSpellChecker:
-        """Get or create spell checker for a language."""
+    def get_checker(self, language: SupportedLanguage) -> Optional[MultiLanguageSpellChecker]:
+        """
+        Get or create spell checker for a language.
+        Returns None if language is not supported (instead of falling back to English).
+        """
         if language not in self.checkers:
             try:
                 self.checkers[language] = MultiLanguageSpellChecker(language)
             except Exception as e:
                 print(f"Warning: Could not initialize checker for {language}: {e}")
-                # Fallback to English
-                if self.default_language not in self.checkers:
-                    self.checkers[self.default_language] = MultiLanguageSpellChecker(
-                        self.default_language
-                    )
-                return self.checkers[self.default_language]
+                # Mark as unsupported - return None instead of falling back to English
+                self.checkers[language] = None
 
         return self.checkers[language]
 
     def check_text(self, text: str, language: SupportedLanguage) -> List[SpellingError]:
-        """Check text in specified language."""
+        """
+        Check text in specified language.
+        Returns empty list if language is not supported (silent skip).
+        """
         checker = self.get_checker(language)
+        if checker is None:
+            return []  # Silent skip for unsupported languages
         return checker.check_text(text)
 
     def add_custom_words(self, words: Set[str], language: SupportedLanguage) -> None:

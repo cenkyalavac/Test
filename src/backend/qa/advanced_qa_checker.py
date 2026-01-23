@@ -267,7 +267,10 @@ class AdvancedQAChecker:
             )
 
     def _check_alphanumeric_mismatches(self, segment: Segment) -> None:
-        """Check for alphanumeric sequence mismatches."""
+        """
+        Check for alphanumeric sequence mismatches.
+        EXCEPTION: Allow language code changes in filenames (e.g., Filename.de → Filename.tr).
+        """
         # Extract sequences like "version 2.1", "build 123", etc.
         pattern = r'[A-Za-z]*[\d\.]+[A-Za-z]*'
 
@@ -276,16 +279,29 @@ class AdvancedQAChecker:
 
         if source_alphanums and source_alphanums != target_alphanums:
             missing = source_alphanums - target_alphanums
-            if missing:
+
+            # Filter out language code changes (e.g., ".de" vs ".tr")
+            filtered_missing = set()
+            for item in missing:
+                # Check if it's a language code pattern like ".de", ".fr", ".tr", etc.
+                if re.match(r'^\.[a-z]{2}$', item):
+                    # This is likely a language code - check if target has ANY language code
+                    lang_code_pattern = r'\.[a-z]{2}'
+                    if re.search(lang_code_pattern, ' '.join(target_alphanums)):
+                        # Target has a language code, so this is a legitimate change
+                        continue
+                filtered_missing.add(item)
+
+            if filtered_missing:
                 self.issues.append(
                     AdvancedQAIssue(
                         segment_id=segment.segment_id,
                         check_type=QACheckType.ALPHANUMERIC_MISMATCH,
                         severity="warning",
-                        message=f"Alphanumeric mismatch: missing {missing}",
+                        message=f"Alphanumeric mismatch: missing {filtered_missing}",
                         source_text=segment.source_text,
                         target_text=segment.target_text,
-                        details={"missing": list(missing)},
+                        details={"missing": list(filtered_missing)},
                     )
                 )
 
@@ -496,14 +512,21 @@ class AdvancedQAChecker:
         """
         Check for spelling errors in translation target text.
 
-        This check uses PySpellChecker to detect potential spelling mistakes
-        in the translated text. Spell check errors are classified as warnings.
+        CRITICAL: For unsupported languages, spell checking is SKIPPED SILENTLY
+        instead of falling back to English (which causes false positives).
+
+        Example: Turkish text will NOT be checked with English dictionary.
+        Instead, it will be skipped to avoid incorrect suggestions like 'airlike' for 'birlikte'.
+
+        Spell check errors are classified as warnings.
         """
         if not segment.target_text or not segment.target_text.strip():
             return
 
         try:
+            # Extract language code - handle both 'tr' and 'tr-TR' formats
             language_code = segment.target_language or "en"
+            language_code = language_code.split('-')[0].lower()  # Convert 'tr-TR' to 'tr'
 
             # Map language code to SupportedLanguage enum
             lang_map = {
@@ -514,23 +537,28 @@ class AdvancedQAChecker:
                 "zh": "CHINESE"
             }
 
-            lang_name = lang_map.get(language_code, "ENGLISH")
+            lang_name = lang_map.get(language_code)
+
+            # If language not in map, skip spell check silently (don't fallback to English!)
+            if lang_name is None:
+                return
 
             if lang_name not in self.spell_checkers:
                 try:
                     lang_enum = SupportedLanguage[lang_name]
                     self.spell_checkers[lang_name] = MultiLanguageSpellChecker(lang_enum)
-                except Exception as e:
-                    # Fallback to English if language not supported
-                    import logging
-                    logging.warning(f"Spell checker unavailable for {lang_name}: {type(e).__name__}. Falling back to English.")
-                    if "ENGLISH" not in self.spell_checkers:
-                        self.spell_checkers["ENGLISH"] = MultiLanguageSpellChecker(
-                            SupportedLanguage.ENGLISH
-                        )
-                    lang_name = "ENGLISH"
+                except Exception:
+                    # Mark as unsupported - don't fallback to English
+                    # This prevents Turkish text from being checked with English dictionary
+                    self.spell_checkers[lang_name] = None
+                    return
 
             checker = self.spell_checkers[lang_name]
+
+            # If checker is None (unsupported), skip silently
+            if checker is None:
+                return
+
             errors: List[SpellingError] = checker.check_text(segment.target_text)
 
             for error in errors:
@@ -551,8 +579,8 @@ class AdvancedQAChecker:
                         }
                     )
                 )
-        except Exception as e:
-            # Silently skip spell checking on error
+        except Exception:
+            # Silently skip spell checking on any error
             pass
 
     def load_checklist(self, checklist: Checklist) -> None:
