@@ -44,7 +44,6 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [qaRunning, setQARunning] = useState(false)
-  const [qaResults, setQAResults] = useState<any>(null)
 
   const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
     // Reset state
@@ -181,7 +180,8 @@ function App() {
       }
 
       const results = await response.json()
-      setQAResults(results)
+      console.log('QA results:', results)
+      setError(null) // Clear any previous errors
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'QA check failed'
       setError(msg)
