@@ -414,17 +414,14 @@ def run_qa_check():
 
     Request body:
     {
-        "segments": [
-            {
-                "segment_id": "1",
-                "source_text": "Save",
-                "target_text": "Kaydet",
-                "status": "translated",
-                "source_language": "en",
-                "target_language": "tr"
-            }
-        ]
+        "segments": [...],
+        "mode": "fast" | "balanced" | "full" (default: "balanced")
     }
+
+    Modes:
+    - fast: Skip spell checking and consistency checks (fastest)
+    - balanced: Skip spell checking only (recommended)
+    - full: All checks including spell checking (slowest)
     """
     try:
         data = request.get_json()
@@ -434,6 +431,11 @@ def run_qa_check():
         return jsonify({"error": "Invalid JSON"}), 400
 
     segments_data = data.get("segments", [])
+    mode = data.get("mode", "balanced").lower()
+
+    # Validate mode
+    if mode not in ["fast", "balanced", "full"]:
+        return jsonify({"error": "Invalid mode. Must be: fast, balanced, or full"}), 400
 
     # Validate segments
     is_valid, error_msg = validate_segments(segments_data)
@@ -463,7 +465,12 @@ def run_qa_check():
 
         # Run QA checks
         checker = AdvancedQAChecker()
-        issues = checker.check_segments(segments)
+
+        # Configure based on mode
+        if mode in ["fast", "balanced"]:
+            checker.spell_check_enabled = False
+
+        issues = checker.check_segments(segments, skip_consistency=mode=="fast")
 
         # Convert issues to JSON
         issues_data = []
@@ -483,7 +490,8 @@ def run_qa_check():
         return jsonify({
             "total_issues": len(issues),
             "issues": issues_data,
-            "summary": summary
+            "summary": summary,
+            "mode": mode
         }), 200
 
     except Exception as e:

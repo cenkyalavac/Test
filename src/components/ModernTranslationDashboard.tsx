@@ -370,7 +370,18 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
       {/* QA Results Section */}
       {qaResults && (
         <div className="mt-8 p-6 bg-gradient-to-br from-blue-900/20 to-blue-800/10 border border-blue-500/20 rounded-lg">
-          <h2 className="text-2xl font-bold text-blue-300 mb-4">QA Check Results</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-blue-300">QA Check Results</h2>
+            {qaResults.mode && (
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                qaResults.mode === 'fast' ? 'bg-emerald-500/20 text-emerald-300' :
+                qaResults.mode === 'balanced' ? 'bg-blue-500/20 text-blue-300' :
+                'bg-orange-500/20 text-orange-300'
+              }`}>
+                {qaResults.mode === 'fast' ? '⚡ Fast Mode' : qaResults.mode === 'balanced' ? '⚖ Balanced Mode' : '🔍 Full Mode'}
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
               <p className="text-blue-300 text-sm font-medium">Total Issues</p>

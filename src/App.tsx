@@ -45,6 +45,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [qaRunning, setQARunning] = useState(false)
   const [qaResults, setQAResults] = useState<any>(null)
+  const [qaMode, setQaMode] = useState<'fast' | 'balanced' | 'full'>('balanced')
 
   const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
     // Reset state
@@ -167,14 +168,17 @@ function App() {
       const response = await fetch(API_ENDPOINTS.QA_CHECK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ segments: segments.map(s => ({
-          segment_id: s.segment_id,
-          source_text: s.source_text,
-          target_text: s.target_text,
-          status: s.status,
-          source_language: s.source_language,
-          target_language: s.target_language
-        }))}),
+        body: JSON.stringify({
+          mode: qaMode,
+          segments: segments.map(s => ({
+            segment_id: s.segment_id,
+            source_text: s.source_text,
+            target_text: s.target_text,
+            status: s.status,
+            source_language: s.source_language,
+            target_language: s.target_language
+          }))
+        }),
       })
 
       if (!response.ok) {
@@ -216,30 +220,50 @@ function App() {
           </div>
         )}
 
-        <div className="fixed top-8 left-8 z-50 flex gap-3">
-          <button
-            onClick={() => setShowDashboard(false)}
-            className="group relative px-5 py-2.5 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white rounded-lg transition font-medium border border-white/10 hover:border-white/20 flex items-center gap-2"
-          >
-            <span>←</span>
-            <span>Back</span>
-          </button>
+        <div className="fixed top-8 left-8 z-50 flex flex-col gap-3">
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowDashboard(false)}
+              className="group relative px-5 py-2.5 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white rounded-lg transition font-medium border border-white/10 hover:border-white/20 flex items-center gap-2"
+            >
+              <span>←</span>
+              <span>Back</span>
+            </button>
+            {segments.length > 0 && (
+              <>
+                <button
+                  onClick={handleRunQA}
+                  disabled={qaRunning}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {qaRunning ? 'QA Running...' : '▣ Run QA Check'}
+                </button>
+                <button
+                  onClick={() => setShowAIAnalysis(true)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
+                >
+                  <Zap size={16} /> AI Analiz
+                </button>
+              </>
+            )}
+          </div>
+          {/* QA Mode Selector */}
           {segments.length > 0 && (
-            <>
-              <button
-                onClick={handleRunQA}
-                disabled={qaRunning}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {qaRunning ? 'QA Running...' : '▣ Run QA Check'}
-              </button>
-              <button
-                onClick={() => setShowAIAnalysis(true)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
-              >
-                <Zap size={16} /> AI Analiz
-              </button>
-            </>
+            <div className="flex gap-2">
+              {(['fast', 'balanced', 'full'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setQaMode(mode)}
+                  className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                    qaMode === mode
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  {mode === 'fast' ? '⚡ Fast' : mode === 'balanced' ? '⚖ Balanced' : '🔍 Full'}
+                </button>
+              ))}
+            </div>
           )}
         </div>
         <ModernTranslationDashboard segments={segments} qaResults={qaResults} />

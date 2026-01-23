@@ -82,12 +82,13 @@ class AdvancedQAChecker:
         self.spell_checkers: Dict[str, MultiLanguageSpellChecker] = {}  # Language -> checker
         self.spell_check_enabled = SPELLCHECKER_AVAILABLE
 
-    def check_segments(self, segments: List[Segment]) -> List[AdvancedQAIssue]:
+    def check_segments(self, segments: List[Segment], skip_consistency: bool = False) -> List[AdvancedQAIssue]:
         """
         Perform all QA checks on segments.
 
         Args:
             segments: List of segments to check
+            skip_consistency: Skip expensive consistency checks (for fast mode)
 
         Returns:
             List of QA issues found
@@ -98,8 +99,9 @@ class AdvancedQAChecker:
         for segment in segments:
             self._check_single_segment(segment)
 
-        # Cross-segment checks (consistency, etc.)
-        self._check_consistency_across_segments(segments)
+        # Cross-segment checks (consistency, etc.) - skip in fast mode
+        if not skip_consistency and len(segments) <= 500:
+            self._check_consistency_across_segments(segments)
 
         return self.issues
 
