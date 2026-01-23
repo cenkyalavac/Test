@@ -44,6 +44,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [qaRunning, setQARunning] = useState(false)
+  const [qaResults, setQAResults] = useState<any>(null)
 
   const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
     // Reset state
@@ -181,6 +182,7 @@ function App() {
 
       const results = await response.json()
       console.log('QA results:', results)
+      setQAResults(results)
       setError(null) // Clear any previous errors
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'QA check failed'
@@ -220,7 +222,12 @@ function App() {
             </>
           )}
         </div>
-        <ModernTranslationDashboard segments={segments} />
+        <ModernTranslationDashboard segments={segments} qaResults={qaResults} />
+        {qaResults && (
+          <div className="fixed bottom-8 right-8 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-40">
+            ✓ QA Check Complete: {qaResults.total_issues} issues found
+          </div>
+        )}
       </div>
     )
   }

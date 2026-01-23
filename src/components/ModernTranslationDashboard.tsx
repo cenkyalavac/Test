@@ -26,7 +26,7 @@ interface DashboardStats {
   perfectMatchCount: number;
 }
 
-export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[] }> = ({ segments }) => {
+export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]; qaResults?: any }> = ({ segments, qaResults }) => {
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     minMatch: 0,
     maxMatch: 100,
@@ -363,6 +363,53 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
           </table>
         </div>
       </div>
+
+      {/* QA Results Section */}
+      {qaResults && (
+        <div className="mt-8 p-6 bg-gradient-to-br from-blue-900/20 to-blue-800/10 border border-blue-500/20 rounded-lg">
+          <h2 className="text-2xl font-bold text-blue-300 mb-4">QA Check Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+              <p className="text-blue-300 text-sm font-medium">Total Issues</p>
+              <p className="text-3xl font-bold text-blue-400">{qaResults.total_issues}</p>
+            </div>
+            {qaResults.summary?.by_severity?.error !== undefined && (
+              <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
+                <p className="text-red-300 text-sm font-medium">Errors</p>
+                <p className="text-3xl font-bold text-red-400">{qaResults.summary.by_severity.error || 0}</p>
+              </div>
+            )}
+            {qaResults.summary?.by_severity?.warning !== undefined && (
+              <div className="bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/20">
+                <p className="text-yellow-300 text-sm font-medium">Warnings</p>
+                <p className="text-3xl font-bold text-yellow-400">{qaResults.summary.by_severity.warning || 0}</p>
+              </div>
+            )}
+            {qaResults.summary?.by_severity?.info !== undefined && (
+              <div className="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
+                <p className="text-green-300 text-sm font-medium">Infos</p>
+                <p className="text-3xl font-bold text-green-400">{qaResults.summary.by_severity.info || 0}</p>
+              </div>
+            )}
+          </div>
+          {qaResults.issues && qaResults.issues.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-slate-200 mb-3">Issues</h3>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {qaResults.issues.slice(0, 10).map((issue: any, idx: number) => (
+                  <div key={idx} className={`p-3 rounded-lg border text-sm ${
+                    issue.severity === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-300' :
+                    issue.severity === 'warning' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' :
+                    'bg-blue-500/10 border-blue-500/20 text-blue-300'
+                  }`}>
+                    <span className="font-semibold">{issue.type}</span>: {issue.message}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
