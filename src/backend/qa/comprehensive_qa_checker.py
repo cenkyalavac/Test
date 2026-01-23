@@ -330,19 +330,26 @@ class UnpairedSymbolChecker:
 
         # Check parentheses
         if target_text.count("(") != target_text.count(")"):
-            issues.append(f"Parentheses mismatch: ( count={target_text.count('(')}, ) count={target_text.count(')')}")
+            paren_open = target_text.count("(")
+            paren_close = target_text.count(")")
+            issues.append(f"Parentheses mismatch: ( count={paren_open}, ) count={paren_close}")
 
         # Check square brackets
         if target_text.count("[") != target_text.count("]"):
-            issues.append(f"Square brackets mismatch: [ count={target_text.count('[')}, ] count={target_text.count(']')}")
+            bracket_open = target_text.count("[")
+            bracket_close = target_text.count("]")
+            issues.append(f"Square brackets mismatch: [ count={bracket_open}, ] count={bracket_close}")
 
         # Check curly braces
         if target_text.count("{") != target_text.count("}"):
-            issues.append(f"Curly braces mismatch: {{ count={target_text.count('{')}, }} count={target_text.count('}')}")
+            brace_open = target_text.count("{")
+            brace_close = target_text.count("}")
+            issues.append(f"Curly braces mismatch: {{ count={brace_open}, }} count={brace_close}")
 
         # Check double quotes
         if target_text.count('"') % 2 != 0:
-            issues.append(f"Unclosed double quotes: count={target_text.count('\"')}")
+            quote_count = target_text.count('"')
+            issues.append(f"Unclosed double quotes: count={quote_count}")
 
         if issues:
             return QAIssue(
