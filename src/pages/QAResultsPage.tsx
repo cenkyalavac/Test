@@ -14,7 +14,22 @@ export const QAResultsPage = ({ segments, qaResults, onBack }: QAResultsPageProp
   )
   const [selectedSeverity, setSelectedSeverity] = useState<'error' | 'warning' | 'info'>('error')
 
-  const selectedSegment = segments.find((s) => s.segment_id === selectedSegmentId)
+  // Get unique segment IDs that have issues
+  const segmentIdsWithIssues = new Set(
+    qaResults?.issues?.map((issue) => issue.segment_id) || []
+  )
+
+  // Filter segments to only show those with issues
+  const segmentsWithIssues = segments.filter((s) =>
+    segmentIdsWithIssues.has(s.segment_id)
+  )
+
+  // Set first segment with issues as selected by default
+  if (selectedSegmentId === null && segmentsWithIssues.length > 0) {
+    setSelectedSegmentId(segmentsWithIssues[0].segment_id)
+  }
+
+  const selectedSegment = segmentsWithIssues.find((s) => s.segment_id === selectedSegmentId)
   const segmentIssues = qaResults?.issues?.filter(
     (issue) => issue.segment_id === selectedSegmentId
   ) || []
@@ -51,7 +66,12 @@ export const QAResultsPage = ({ segments, qaResults, onBack }: QAResultsPageProp
       <div className="w-[70%] border-r border-slate-800 flex flex-col">
         {/* Header */}
         <div className="h-16 border-b border-slate-800 px-8 flex items-center justify-between bg-slate-900/50">
-          <h2 className="text-xl font-bold text-white">Translation Workbench</h2>
+          <div>
+            <h2 className="text-xl font-bold text-white">Translation Workbench</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              {segmentsWithIssues.length} of {segments.length} segments with issues
+            </p>
+          </div>
           <button
             onClick={onBack}
             className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -74,7 +94,7 @@ export const QAResultsPage = ({ segments, qaResults, onBack }: QAResultsPageProp
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {segments.map((segment) => {
+              {segmentsWithIssues.map((segment) => {
                 const isSelected = segment.segment_id === selectedSegmentId
                 const hasErrors = qaResults?.issues?.some(
                   (issue) => issue.segment_id === segment.segment_id && issue.severity === 'error'
