@@ -47,15 +47,25 @@ app = Flask(
     template_folder=DIST_FOLDER
 )
 
-# CORS configuration (supports both single-service and dual-service deployments)
-# Single service: same origin (no CORS issues)
-# Dual service on Railway: allows cross-origin requests from frontend service
+# CORS configuration with restricted origins for security
+# Restricts cross-origin requests to whitelisted domains
+ALLOWED_ORIGINS = [
+    os.environ.get("FRONTEND_URL", "http://localhost:5173"),  # Local dev
+    "https://yourdomain.com",  # Production domain
+]
+
+# Remove https://yourdomain.com in development to avoid hardcoded domain
+if not os.environ.get("PRODUCTION"):
+    ALLOWED_ORIGINS = [origin for origin in ALLOWED_ORIGINS if "yourdomain" not in origin]
+
 CORS(app,
      resources={r"/api/*": {
-         "origins": "*",
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "origins": ALLOWED_ORIGINS,
+         "methods": ["GET", "POST", "OPTIONS"],
          "allow_headers": ["Content-Type", "Authorization"],
          "expose_headers": ["Content-Type"],
+         "supports_credentials": False,
+         "max_age": 3600,
      }}
 )
 
@@ -69,15 +79,16 @@ def set_security_headers(response):
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
 
-# Global state for API keys and configuration
+# Load API keys from environment variables (secure approach)
 api_config = {
-    "openai_key": None,
-    "gemini_key": None,
-    "default_engine": "mock",  # 'openai', 'gemini', or 'mock'
+    "openai_key": os.environ.get("OPENAI_API_KEY"),
+    "gemini_key": os.environ.get("GEMINI_API_KEY"),
+    "default_engine": os.environ.get("DEFAULT_QA_ENGINE", "mock"),
 }
 
-# Cache for parsed segments
-segments_cache: Dict[str, List[Segment]] = {}
+# In-memory cache with TTL (production should use Redis)
+segments_cache: Dict[str, tuple[List[Segment], float]] = {}
+CACHE_TTL_SECONDS = 3600  # 1 hour expiry
 
 
 # ============================================================================
@@ -224,14 +235,12 @@ def get_configured_engines():
         engines.append({
             "engine": "openai",
             "configured": True,
-            "key_preview": f"sk-{api_config['openai_key'][-4:]}"
         })
 
     if api_config["gemini_key"]:
         engines.append({
             "engine": "gemini",
             "configured": True,
-            "key_preview": f"...{api_config['gemini_key'][-4:]}"
         })
 
     engines.append({
@@ -426,9 +435,10 @@ def run_qa_check():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"error": "Invalid JSON"}), 400
-    except Exception:
-        return jsonify({"error": "Invalid JSON"}), 400
+            return jsonify({"error": "Invalid JSON: Empty request body"}), 400
+    except Exception as e:
+        app.logger.error(f"JSON parsing failed in run_qa_check: {type(e).__name__}: {str(e)}")
+        return jsonify({"error": "Invalid JSON: Could not parse request"}), 400
 
     segments_data = data.get("segments", [])
     mode = data.get("mode", "balanced").lower()
@@ -518,9 +528,10 @@ def predict_errors():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"error": "Invalid JSON"}), 400
-    except Exception:
-        return jsonify({"error": "Invalid JSON"}), 400
+            return jsonify({"error": "Invalid JSON: Empty request body"}), 400
+    except Exception as e:
+        app.logger.error(f"JSON parsing failed in predict_errors: {type(e).__name__}: {str(e)}")
+        return jsonify({"error": "Invalid JSON: Could not parse request"}), 400
 
     segments_data = data.get("segments", [])
     engine = data.get("engine", api_config["default_engine"]).lower()

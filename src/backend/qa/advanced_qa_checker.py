@@ -520,8 +520,10 @@ class AdvancedQAChecker:
                 try:
                     lang_enum = SupportedLanguage[lang_name]
                     self.spell_checkers[lang_name] = MultiLanguageSpellChecker(lang_enum)
-                except Exception:
+                except Exception as e:
                     # Fallback to English if language not supported
+                    import logging
+                    logging.warning(f"Spell checker unavailable for {lang_name}: {type(e).__name__}. Falling back to English.")
                     if "ENGLISH" not in self.spell_checkers:
                         self.spell_checkers["ENGLISH"] = MultiLanguageSpellChecker(
                             SupportedLanguage.ENGLISH

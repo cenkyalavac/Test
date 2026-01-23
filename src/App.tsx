@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Zap, AlertCircle } from 'lucide-react'
 import './App.css'
 import Header from './components/Header'
@@ -8,32 +8,7 @@ import AIAnalysisPanel from './components/AIAnalysisPanel'
 import { ModernTranslationDashboard } from './components/ModernTranslationDashboard'
 import ErrorBoundary from './components/ErrorBoundary'
 import { API_ENDPOINTS } from './config'
-
-interface Segment {
-  segment_id: string
-  source_text: string
-  target_text: string
-  status: string
-  source_language?: string
-  target_language?: string
-  file_path?: string
-  source_plain_text?: string
-  target_plain_text?: string
-  source_inline_tags?: any[]
-  target_inline_tags?: any[]
-  metadata?: {
-    match_quality?: number
-    confirmation_status?: string
-    segment_status?: string
-    priority?: number
-    context?: string
-    domain?: string
-    custom_attributes?: Record<string, any>
-  }
-  xliff_version?: string
-  variant?: string
-  match_percentage?: number
-}
+import type { Segment, QAResults, QAMode } from './types'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -44,8 +19,19 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [qaRunning, setQARunning] = useState(false)
-  const [qaResults, setQAResults] = useState<any>(null)
-  const [qaMode, setQaMode] = useState<'fast' | 'balanced' | 'full'>('balanced')
+  const [qaResults, setQAResults] = useState<QAResults | null>(null)
+  const [qaMode, setQaMode] = useState<QAMode>('balanced')
+
+  // Cleanup abort controllers on unmount
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
+
+  useEffect(() => {
+    return () => {
+      // Abort all pending requests on unmount
+      abortControllersRef.current.forEach(controller => controller.abort())
+      abortControllersRef.current.clear()
+    }
+  }, [])
 
   const handleFileUpload = async (fileInput: File | { name: string; size: number } | null) => {
     // Reset state
