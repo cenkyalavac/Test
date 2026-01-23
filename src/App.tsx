@@ -196,6 +196,25 @@ function App() {
   if (showDashboard && segments.length > 0) {
     return (
       <div className="w-full">
+        {/* Error Toast */}
+        {error && (
+          <div className="fixed top-8 right-8 z-50 p-4 rounded-lg bg-red-900/90 border border-red-600 text-red-100 shadow-lg max-w-md animate-pulse">
+            <div className="flex items-start gap-3">
+              <span className="text-red-400">⚠</span>
+              <div>
+                <p className="font-semibold">Error</p>
+                <p className="text-sm">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-300"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="fixed top-8 left-8 z-50 flex gap-3">
           <button
             onClick={() => setShowDashboard(false)}
