@@ -25,13 +25,13 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'error':
-        return { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-600', badge: 'bg-red-100 text-red-700' }
+        return { bg: 'bg-red-900/20', border: 'border-red-600', icon: 'text-red-400', badge: 'badge-error' }
       case 'warning':
-        return { bg: 'bg-yellow-50', border: 'border-yellow-200', icon: 'text-yellow-600', badge: 'bg-yellow-100 text-yellow-700' }
+        return { bg: 'bg-yellow-900/20', border: 'border-yellow-600', icon: 'text-yellow-400', badge: 'badge-warning' }
       case 'info':
-        return { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600', badge: 'bg-blue-100 text-blue-700' }
+        return { bg: 'bg-blue-900/20', border: 'border-blue-600', icon: 'text-blue-400', badge: 'badge-info' }
       default:
-        return { bg: 'bg-slate-50', border: 'border-slate-200', icon: 'text-slate-600', badge: 'bg-slate-100 text-slate-700' }
+        return { bg: 'bg-slate-800/50', border: 'border-slate-600', icon: 'text-slate-400', badge: 'badge-ghost' }
     }
   }
 
@@ -49,42 +49,42 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden">
       {/* Header */}
-      <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 p-8">
+      <div className="border-b border-slate-700 bg-gradient-to-r from-slate-900 via-blue-900/30 to-slate-900 p-8">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">QA Analysis Results</h2>
-            <p className="text-slate-600">
-              Analyzed <span className="font-semibold">{segments.length}</span> segments in{' '}
-              <span className="font-semibold">{qaResults.mode}</span> mode
+            <h2 className="text-3xl font-bold text-white mb-2">QA Analysis Results</h2>
+            <p className="text-slate-300">
+              Analyzed <span className="font-semibold text-blue-400">{segments.length}</span> segments in{' '}
+              <span className="font-semibold text-cyan-400">{qaResults.mode}</span> mode
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-700 text-2xl"
+            className="btn btn-ghost btn-circle text-white"
           >
-            ×
+            ✕
           </button>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">Total Issues</p>
-            <p className="text-2xl font-bold text-slate-900">{qaResults.total_issues}</p>
+          <div className="stat bg-slate-800/50 rounded-lg border border-slate-600">
+            <div className="stat-title text-slate-400">Total Issues</div>
+            <div className="stat-value text-blue-400 text-2xl">{qaResults.total_issues}</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-red-200">
-            <p className="text-sm text-slate-600 mb-1">Errors</p>
-            <p className="text-2xl font-bold text-red-600">{qaResults.summary.by_severity.error || 0}</p>
+          <div className="stat bg-slate-800/50 rounded-lg border border-red-600/30">
+            <div className="stat-title text-slate-400">Errors</div>
+            <div className="stat-value text-red-400 text-2xl">{qaResults.summary.by_severity.error || 0}</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-yellow-200">
-            <p className="text-sm text-slate-600 mb-1">Warnings</p>
-            <p className="text-2xl font-bold text-yellow-600">{qaResults.summary.by_severity.warning || 0}</p>
+          <div className="stat bg-slate-800/50 rounded-lg border border-yellow-600/30">
+            <div className="stat-title text-slate-400">Warnings</div>
+            <div className="stat-value text-yellow-400 text-2xl">{qaResults.summary.by_severity.warning || 0}</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-blue-200">
-            <p className="text-sm text-slate-600 mb-1">Info</p>
-            <p className="text-2xl font-bold text-blue-600">{qaResults.summary.by_severity.info || 0}</p>
+          <div className="stat bg-slate-800/50 rounded-lg border border-blue-600/30">
+            <div className="stat-title text-slate-400">Info</div>
+            <div className="stat-value text-blue-400 text-2xl">{qaResults.summary.by_severity.info || 0}</div>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
         <div className="mt-6 flex justify-between items-center">
           <button
             onClick={() => setShowCharts(!showCharts)}
-            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-blue-50 text-slate-700 rounded-lg font-medium transition border border-slate-200"
+            className="btn btn-outline btn-sm gap-2 border-slate-600 text-slate-300 hover:text-white hover:border-blue-500"
           >
             <BarChart3 size={18} />
             {showCharts ? 'Hide' : 'Show'} Detailed Charts
@@ -103,25 +103,25 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
 
       {/* Charts Section */}
       {showCharts && (
-        <div className="border-b border-slate-200 p-8 bg-slate-50">
+        <div className="border-b border-slate-700 p-8 bg-slate-800/30">
           <QAChartsPanel qaResults={qaResults} />
         </div>
       )}
 
       {/* Issues by Type */}
       {qaResults.summary.by_type && Object.keys(qaResults.summary.by_type).length > 0 && (
-        <div className="border-b border-slate-200 p-8">
-          <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+        <div className="border-b border-slate-700 p-8">
+          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
             <BarChart3 size={20} />
             Issues by Type
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Object.entries(qaResults.summary.by_type).map(([type, count]) => (
-              <div key={type} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <p className="text-xs text-slate-600 font-semibold uppercase mb-2">
+              <div key={type} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+                <p className="text-xs text-slate-400 font-semibold uppercase mb-2">
                   {type.replace(/_/g, ' ')}
                 </p>
-                <p className="text-2xl font-bold text-slate-900">{count}</p>
+                <p className="text-2xl font-bold text-slate-200">{count}</p>
               </div>
             ))}
           </div>
@@ -129,27 +129,27 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
       )}
 
       {/* Filter and Controls */}
-      <div className="border-b border-slate-200 p-8 flex items-center justify-between">
-        <div className="flex gap-3">
+      <div className="border-b border-slate-700 p-8 flex items-center justify-between flex-wrap gap-4">
+        <div className="flex gap-3 flex-wrap">
           {(['all', 'error', 'warning', 'info'] as const).map((severity) => (
             <button
               key={severity}
               onClick={() => setSelectedSeverity(severity)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
+              className={`btn btn-sm gap-2 ${
                 selectedSeverity === severity
                   ? severity === 'error'
-                    ? 'bg-red-100 text-red-700'
+                    ? 'btn-error'
                     : severity === 'warning'
-                    ? 'bg-yellow-100 text-yellow-700'
+                    ? 'btn-warning'
                     : severity === 'info'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'btn-info'
+                    : 'btn-primary'
+                  : 'btn-outline btn-ghost'
               }`}
             >
               {severity === 'all' ? 'All Issues' : severity.charAt(0).toUpperCase() + severity.slice(1)}
               {severity !== 'all' && (
-                <span className="ml-2">
+                <span>
                   {severity === 'error'
                     ? qaResults.summary.by_severity.error || 0
                     : severity === 'warning'
@@ -160,7 +160,7 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
             </button>
           ))}
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition">
+        <button className="btn btn-outline btn-sm gap-2 border-slate-600 text-slate-300 hover:text-white hover:border-cyan-500">
           <Download size={18} />
           Export
         </button>
@@ -170,9 +170,9 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
       <div className="p-8">
         {filteredIssues.length === 0 ? (
           <div className="text-center py-12">
-            <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-            <p className="text-lg font-semibold text-slate-900">No issues found!</p>
-            <p className="text-slate-600">Your translation file passed all quality checks.</p>
+            <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
+            <p className="text-lg font-semibold text-white">No issues found!</p>
+            <p className="text-slate-400">Your translation file passed all quality checks.</p>
           </div>
         ) : (
           <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -188,28 +188,28 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className={`${colors.badge} text-xs font-semibold px-2 py-1 rounded`}>
+                        <span className={`badge ${colors.badge}`}>
                           {issue.severity.toUpperCase()}
                         </span>
-                        <span className="text-xs font-semibold text-slate-600 bg-slate-200 px-2 py-1 rounded">
+                        <span className="badge badge-outline text-slate-300">
                           {issue.check_type.replace(/_/g, ' ')}
                         </span>
-                        <span className="text-xs text-slate-600">Segment #{issue.segment_id}</span>
+                        <span className="text-xs text-slate-400">Segment #{issue.segment_id}</span>
                       </div>
 
-                      <p className="font-semibold text-slate-900 mb-2">{issue.message}</p>
+                      <p className="font-semibold text-white mb-2">{issue.message}</p>
 
                       {(issue.source_text || issue.target_text) && (
-                        <div className="text-sm text-slate-700 space-y-1 bg-white/50 rounded p-3 mb-2">
+                        <div className="text-sm text-slate-300 space-y-1 bg-slate-800/50 rounded p-3 mb-2">
                           {issue.source_text && (
                             <p>
-                              <span className="font-semibold">Source:</span> {issue.source_text.substring(0, 100)}
+                              <span className="font-semibold text-blue-400">Source:</span> {issue.source_text.substring(0, 100)}
                               {issue.source_text.length > 100 ? '...' : ''}
                             </p>
                           )}
                           {issue.target_text && (
                             <p>
-                              <span className="font-semibold">Target:</span> {issue.target_text.substring(0, 100)}
+                              <span className="font-semibold text-cyan-400">Target:</span> {issue.target_text.substring(0, 100)}
                               {issue.target_text.length > 100 ? '...' : ''}
                             </p>
                           )}
@@ -217,8 +217,8 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
                       )}
 
                       {issue.details && Object.keys(issue.details).length > 0 && (
-                        <details className="text-xs text-slate-600 mt-2">
-                          <summary className="cursor-pointer font-semibold hover:text-slate-900">
+                        <details className="text-xs text-slate-400 mt-2">
+                          <summary className="cursor-pointer font-semibold hover:text-slate-300">
                             Details
                           </summary>
                           <div className="mt-2 space-y-1 ml-4">
@@ -237,7 +237,7 @@ export const ModernResultsPanel: React.FC<ModernResultsPanelProps> = ({
             })}
 
             {filteredIssues.length > 30 && (
-              <div className="text-center py-4 text-slate-600 text-sm">
+              <div className="text-center py-4 text-slate-400 text-sm">
                 Showing 30 of {filteredIssues.length} issues
               </div>
             )}

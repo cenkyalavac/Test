@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Zap, RotateCcw } from 'lucide-react'
 import './App.css'
 import ModernFileUpload from './components/ModernFileUpload'
-import { LandingPage } from './components/LandingPage'
+import { LandingPagePro } from './components/LandingPagePro'
 import { ModernLayout } from './components/ModernLayout'
 import { ModernResultsPanel } from './components/ModernResultsPanel'
 import AIAnalysisPanel from './components/AIAnalysisPanel'
@@ -207,7 +207,7 @@ function App() {
   if (segments.length === 0) {
     return (
       <ErrorBoundary>
-        <LandingPage
+        <LandingPagePro
           onGetStarted={() => {
             // Scroll to upload section
             const uploadSection = document.getElementById('upload-section')
