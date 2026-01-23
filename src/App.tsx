@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Zap, RotateCcw, AlertCircle, CheckCircle } from 'lucide-react'
+import { Zap, RotateCcw, AlertCircle, CheckCircle, Cloud, TrendingUp, AlertTriangle } from 'lucide-react'
 import './App.css'
 import ModernFileUpload from './components/ModernFileUpload'
 import { LandingPagePro } from './components/LandingPagePro'
@@ -186,7 +186,7 @@ function App() {
 
   if (showAIAnalysis && segments.length > 0) {
     return (
-      <div className="flex h-screen bg-slate-100">
+      <div className="flex h-screen bg-slate-950">
         <AIAnalysisPanel
           segments={segments}
           onClose={() => setShowAIAnalysis(false)}
@@ -207,46 +207,52 @@ function App() {
           }}
         />
 
-        <div id="upload-section" className="min-h-screen bg-slate-50 px-6 py-16">
-          <div className="max-w-5xl mx-auto">
-            <div className="mb-12">
-              <h2 className="text-4xl font-bold text-slate-800 mb-3">Upload Your File</h2>
-              <p className="text-lg text-slate-600">Drag and drop your translation file or click to browse</p>
+        <div id="upload-section" className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-6 py-20 relative overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-2000"></div>
+          </div>
+
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Upload & Analyze</h2>
+              <p className="text-lg text-slate-400">Drag your translation file here to get instant QA results</p>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg p-10 border border-slate-100">
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl shadow-2xl p-12 border border-white/10">
               {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-start gap-3">
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">{error}</div>
                 </div>
               )}
 
               {successMessage && (
-                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-start gap-3">
+                <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-300 flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">{successMessage}</div>
                 </div>
               )}
 
               {/* Parser & QA Options */}
-              <div className="mb-10 p-6 bg-slate-50 rounded-xl border border-slate-200">
-                <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wide">Processing Options</h3>
+              <div className="mb-10 p-6 bg-white/5 rounded-xl border border-white/10">
+                <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wide">Processing Options</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-800 mb-2">Parser Engine</label>
+                    <label className="block text-sm font-semibold text-white mb-2">Parser Engine</label>
                     <select
                       value={parserEngine}
                       onChange={(e) => setParserEngine(e.target.value as 'lxml' | 'translate-toolkit')}
                       disabled={!toolkitAvailable && parserEngine === 'translate-toolkit'}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400"
                     >
-                      <option value="lxml">lxml Parser (Default)</option>
+                      <option value="lxml" className="bg-slate-900">lxml Parser (Default)</option>
                       {toolkitAvailable && (
-                        <option value="translate-toolkit">Translate-Toolkit (Alternative)</option>
+                        <option value="translate-toolkit" className="bg-slate-900">Translate-Toolkit (Alternative)</option>
                       )}
                     </select>
-                    <p className="text-xs text-slate-500 mt-2">
+                    <p className="text-xs text-slate-400 mt-2">
                       {parserEngine === 'lxml'
                         ? 'Fast and reliable XML parser'
                         : 'Alternative parser for problematic files'}
@@ -254,16 +260,16 @@ function App() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-800 mb-2">QA Checker</label>
+                    <label className="block text-sm font-semibold text-white mb-2">QA Checker</label>
                     <select
                       value={qaChecker}
                       onChange={(e) => setQaChecker(e.target.value as 'advanced' | 'comprehensive')}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400"
                     >
-                      <option value="advanced">Advanced QA (Default)</option>
-                      <option value="comprehensive">Comprehensive QA (Strict)</option>
+                      <option value="advanced" className="bg-slate-900">Advanced QA (Default)</option>
+                      <option value="comprehensive" className="bg-slate-900">Comprehensive QA (Strict)</option>
                     </select>
-                    <p className="text-xs text-slate-500 mt-2">
+                    <p className="text-xs text-slate-400 mt-2">
                       {qaChecker === 'advanced'
                         ? '16 check types with spell-checking'
                         : '10 check types with false-positive prevention'}
@@ -273,13 +279,13 @@ function App() {
               </div>
 
               {isLoading ? (
-                <div className="text-center py-16">
+                <div className="text-center py-20">
                   <div className="inline-block">
                     <div className="animate-spin">
-                      <Zap className="w-12 h-12 text-blue-600" />
+                      <Zap className="w-12 h-12 text-blue-500" />
                     </div>
                   </div>
-                  <p className="mt-4 text-slate-600 font-medium">Processing your file...</p>
+                  <p className="mt-4 text-slate-300 font-medium">Processing your file...</p>
                 </div>
               ) : (
                 <ModernFileUpload onFileSelect={handleFileUpload} />
@@ -293,15 +299,21 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-slate-50">
-        <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+        {/* Background Effects */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-5"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-5"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-10 relative z-10">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-bold text-slate-800">Quality Analysis</h1>
+                <h1 className="text-4xl font-bold text-white">Quality Analysis</h1>
                 {uploadedFile && (
-                  <p className="text-slate-600 mt-1">File: <span className="font-semibold text-slate-800">{uploadedFile.name}</span></p>
+                  <p className="text-slate-400 mt-2">File: <span className="font-semibold text-white">{uploadedFile.name}</span></p>
                 )}
               </div>
               <button
@@ -311,7 +323,7 @@ function App() {
                   setQAResults(null)
                   setQaMode('balanced')
                 }}
-                className="flex items-center gap-2 px-6 py-2 bg-white text-slate-700 rounded-lg font-semibold hover:bg-slate-100 transition border border-slate-300"
+                className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold transition border border-white/20 backdrop-blur-xl"
               >
                 <RotateCcw size={18} />
                 Upload New
@@ -321,20 +333,20 @@ function App() {
 
           {/* Messages */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-start gap-3">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
               <div className="flex-1">{error}</div>
-              <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700 font-bold">
+              <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 font-bold">
                 ×
               </button>
             </div>
           )}
 
           {successMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-start gap-3">
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-300 flex items-start gap-3">
               <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
               <div className="flex-1">{successMessage}</div>
-              <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700 font-bold">
+              <button onClick={() => setSuccessMessage(null)} className="text-green-400 hover:text-green-300 font-bold">
                 ×
               </button>
             </div>
@@ -345,7 +357,7 @@ function App() {
             <button
               onClick={handleRunQA}
               disabled={qaRunning || segments.length === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-blue-500/50"
             >
               <Zap size={20} />
               {qaRunning ? 'QA Running...' : 'Run QA Check'}
@@ -354,7 +366,7 @@ function App() {
             <button
               onClick={() => setShowAIAnalysis(true)}
               disabled={segments.length === 0}
-              className="px-6 py-3 bg-white text-slate-700 rounded-lg font-semibold hover:bg-slate-100 transition disabled:opacity-50 disabled:cursor-not-allowed border border-slate-300"
+              className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed border border-white/20 backdrop-blur-xl"
             >
               AI Analysis
             </button>
@@ -362,10 +374,10 @@ function App() {
 
           {/* QA Mode & Checker Selector */}
           {segments.length > 0 && (
-            <div className="mb-8 bg-white rounded-xl shadow-md p-6 border border-slate-100">
+            <div className="mb-8 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-6">
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-sm font-bold text-slate-800 mb-3 uppercase tracking-wide">QA Mode</label>
+                  <label className="block text-sm font-bold text-white mb-3 uppercase tracking-wide">QA Mode</label>
                   <div className="flex gap-2">
                     {(['fast', 'balanced', 'full'] as const).map((mode) => (
                       <button
@@ -373,8 +385,8 @@ function App() {
                         onClick={() => setQaMode(mode)}
                         className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                           qaMode === mode
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
+                            : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
                         }`}
                       >
                         {mode === 'fast' ? '⚡ Fast' : mode === 'balanced' ? '⚖ Balanced' : '🔍 Full'}
@@ -384,7 +396,7 @@ function App() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-800 mb-3 uppercase tracking-wide">Checker Type</label>
+                  <label className="block text-sm font-bold text-white mb-3 uppercase tracking-wide">Checker Type</label>
                   <div className="flex gap-2">
                     {(['advanced', 'comprehensive'] as const).map((checker) => (
                       <button
@@ -392,8 +404,8 @@ function App() {
                         onClick={() => setQaChecker(checker)}
                         className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                           qaChecker === checker
-                            ? 'bg-cyan-600 text-white'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
+                            ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/50'
+                            : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
                         }`}
                       >
                         {checker === 'advanced' ? 'Advanced' : 'Comprehensive'}
@@ -414,32 +426,53 @@ function App() {
             />
           )}
 
-          {/* Segments Summary */}
+          {/* Segments Summary - Bento Grid */}
           {!qaResults && segments.length > 0 && (
-            <div className="bg-white rounded-xl shadow-md p-8 border border-slate-100">
-              <h3 className="text-2xl font-bold text-slate-800 mb-6">Uploaded Segments</h3>
-              <div className="grid md:grid-cols-4 gap-6">
-                <div className="p-6 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                  <p className="text-sm text-slate-600 font-semibold mb-2">Total Segments</p>
-                  <p className="text-3xl font-bold text-blue-700">{segments.length}</p>
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bold text-white">Uploaded Segments</h3>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Total Segments */}
+                <div className="group relative bg-gradient-to-br from-blue-600/30 to-blue-700/20 hover:from-blue-600/40 hover:to-blue-700/30 backdrop-blur-xl rounded-2xl border border-blue-500/20 hover:border-blue-500/40 p-8 transition overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-0 group-hover:opacity-5 transition"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-blue-300 font-semibold">TOTAL SEGMENTS</p>
+                      <Cloud className="w-5 h-5 text-blue-400 opacity-50" />
+                    </div>
+                    <p className="text-5xl font-bold text-white">{segments.length}</p>
+                    <p className="text-sm text-blue-300 mt-3">Files processed</p>
+                  </div>
                 </div>
-                <div className="p-6 bg-green-50 rounded-lg border-l-4 border-green-500">
-                  <p className="text-sm text-slate-600 font-semibold mb-2">Translated</p>
-                  <p className="text-3xl font-bold text-green-700">
-                    {segments.filter(s => s.status === 'translated').length}
-                  </p>
+
+                {/* Errors */}
+                <div className="group relative bg-gradient-to-br from-red-600/30 to-red-700/20 hover:from-red-600/40 hover:to-red-700/30 backdrop-blur-xl rounded-2xl border border-red-500/20 hover:border-red-500/40 p-8 transition overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-red-600 opacity-0 group-hover:opacity-5 transition"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-red-300 font-semibold">ERRORS</p>
+                      <AlertTriangle className="w-5 h-5 text-red-400 opacity-50" />
+                    </div>
+                    <p className="text-5xl font-bold text-white">
+                      {qaResults ? ((qaResults as any).summary.by_severity['error'] ?? 0) : '-'}
+                    </p>
+                    <p className="text-sm text-red-300 mt-3">QA issues found</p>
+                  </div>
                 </div>
-                <div className="p-6 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
-                  <p className="text-sm text-slate-600 font-semibold mb-2">Needs Review</p>
-                  <p className="text-3xl font-bold text-yellow-700">
-                    {segments.filter(s => s.status === 'needs-review').length}
-                  </p>
-                </div>
-                <div className="p-6 bg-slate-100 rounded-lg border-l-4 border-slate-500">
-                  <p className="text-sm text-slate-600 font-semibold mb-2">File Size</p>
-                  <p className="text-3xl font-bold text-slate-700">
-                    {uploadedFile ? (uploadedFile.size / 1024 / 1024).toFixed(2) : 0}MB
-                  </p>
+
+                {/* Warnings */}
+                <div className="group relative bg-gradient-to-br from-yellow-600/30 to-yellow-700/20 hover:from-yellow-600/40 hover:to-yellow-700/30 backdrop-blur-xl rounded-2xl border border-yellow-500/20 hover:border-yellow-500/40 p-8 transition overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500 to-yellow-600 opacity-0 group-hover:opacity-5 transition"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-yellow-300 font-semibold">WARNINGS</p>
+                      <TrendingUp className="w-5 h-5 text-yellow-400 opacity-50" />
+                    </div>
+                    <p className="text-5xl font-bold text-white">
+                      {qaResults ? ((qaResults as any).summary.by_severity['warning'] ?? 0) : '-'}
+                    </p>
+                    <p className="text-sm text-yellow-300 mt-3">Potential issues</p>
+                  </div>
                 </div>
               </div>
             </div>
