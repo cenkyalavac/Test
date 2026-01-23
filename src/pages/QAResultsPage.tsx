@@ -34,7 +34,18 @@ export const QAResultsPage = ({ segments, qaResults, onBack }: QAResultsPageProp
     (issue) => issue.segment_id === selectedSegmentId
   ) || []
 
+  // Count issues by severity for this segment
+  const issueCounts = {
+    error: segmentIssues.filter((i) => i.severity === 'error').length,
+    warning: segmentIssues.filter((i) => i.severity === 'warning').length,
+    info: segmentIssues.filter((i) => i.severity === 'info').length,
+  }
+
+  // Get current issue for selected severity
   const currentIssue = segmentIssues.find((issue) => issue.severity === selectedSeverity)
+
+  // Get other issues (different from selected severity)
+  const otherIssues = segmentIssues.filter((issue) => issue.severity !== selectedSeverity)
 
   // Render text with highlighted errors
   const renderHighlightedText = (text: string, issues: typeof segmentIssues) => {
@@ -159,99 +170,165 @@ export const QAResultsPage = ({ segments, qaResults, onBack }: QAResultsPageProp
         </div>
 
         {/* Content */}
-        {selectedSegment && (
+        {selectedSegment && segmentIssues.length > 0 ? (
           <div className="flex-1 overflow-auto p-6 space-y-6">
             {/* MQM Category Dropdown */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-400 uppercase">MQM Category</label>
               <div className="relative">
                 <button className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-300 text-sm flex items-center justify-between hover:border-slate-600 transition-colors">
-                  <span>Accuracy &gt; Mistranslation</span>
+                  <span>{currentIssue?.check_type || 'Accuracy > Mistranslation'}</span>
                   <ChevronDown className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Severity Selection */}
+            {/* Severity Selection with Counts */}
             <div className="space-y-3">
               <label className="text-xs font-semibold text-slate-400 uppercase">Severity</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { level: 'error' as const, label: 'Critical', color: 'border-red-600 bg-red-950/20' },
-                  { level: 'warning' as const, label: 'Major', color: 'border-yellow-600 bg-yellow-950/20' },
-                  { level: 'info' as const, label: 'Minor', color: 'border-blue-600 bg-blue-950/20' },
-                ].map(({ level, label, color }) => (
-                  <button
-                    key={level}
-                    onClick={() => setSelectedSeverity(level)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-                      selectedSeverity === level
-                        ? `${color} text-white`
-                        : 'border-slate-700 text-slate-400 hover:border-slate-600'
-                    }`}
-                  >
-                    <div>{label}</div>
-                    {level === 'error' && <div className="text-xs opacity-75">(Red)</div>}
-                    {level === 'warning' && <div className="text-xs opacity-75">(Orange)</div>}
-                    {level === 'info' && <div className="text-xs opacity-75">(Yellow)</div>}
-                  </button>
-                ))}
+                  { level: 'error' as const, label: 'Critical', color: 'border-red-600 bg-red-950/20', bgInactive: 'bg-red-950/10' },
+                  { level: 'warning' as const, label: 'Major', color: 'border-yellow-600 bg-yellow-950/20', bgInactive: 'bg-yellow-950/10' },
+                  { level: 'info' as const, label: 'Minor', color: 'border-blue-600 bg-blue-950/20', bgInactive: 'bg-blue-950/10' },
+                ].map(({ level, label, color, bgInactive }) => {
+                  const count = issueCounts[level]
+                  const isSelected = selectedSeverity === level
+                  const hasIssueAtThisLevel = count > 0
+
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => setSelectedSeverity(level)}
+                      disabled={!hasIssueAtThisLevel}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all relative ${
+                        isSelected
+                          ? `${color} text-white`
+                          : hasIssueAtThisLevel
+                            ? `border-slate-700 ${bgInactive} text-slate-300 hover:border-slate-600`
+                            : 'border-slate-700 text-slate-500 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div>{label}</div>
+                      {count > 0 && (
+                        <div className="text-xs opacity-75">
+                          {count === 1 ? '(1)' : `(${count})`}
+                        </div>
+                      )}
+                      {count === 0 && <div className="text-xs opacity-50">(0)</div>}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            {/* AI Suggestion */}
+            {/* Issue Details or Summary */}
             {currentIssue ? (
               <div className="space-y-3">
+                {/* Issue Message */}
                 <div className="p-4 bg-gradient-to-br from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-lg">
                   <div className="flex items-start gap-2 mb-3">
                     <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs font-semibold text-green-300">RECOMMENDED FIX</p>
+                    <p className="text-xs font-semibold text-green-300">AI ANALYSIS</p>
                   </div>
-                  <p className="text-sm text-green-100">{currentIssue.message}</p>
+                  <p className="text-sm text-green-100 leading-relaxed">{currentIssue.message}</p>
                 </div>
+
+                {/* Additional Details if available */}
+                {currentIssue.details && Object.keys(currentIssue.details).length > 0 && (
+                  <div className="p-3 bg-slate-800/30 border border-slate-700 rounded-lg">
+                    <p className="text-xs font-semibold text-slate-300 mb-2">Details</p>
+                    <div className="space-y-1">
+                      {Object.entries(currentIssue.details).map(([key, value]) => (
+                        <div key={key} className="text-xs text-slate-400">
+                          <span className="font-medium">{key}:</span> {String(value)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-4 bg-slate-800/30 border border-slate-700 rounded-lg">
-                <p className="text-sm text-slate-400">No issues found for this severity level</p>
+                <p className="text-sm text-slate-300 font-medium mb-2">This segment has issues in:</p>
+                <div className="space-y-1">
+                  {issueCounts.error > 0 && (
+                    <p className="text-sm text-red-300 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                      {issueCounts.error} Critical {issueCounts.error === 1 ? 'issue' : 'issues'}
+                    </p>
+                  )}
+                  {issueCounts.warning > 0 && (
+                    <p className="text-sm text-yellow-300 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                      {issueCounts.warning} Major {issueCounts.warning === 1 ? 'issue' : 'issues'}
+                    </p>
+                  )}
+                  {issueCounts.info > 0 && (
+                    <p className="text-sm text-blue-300 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      {issueCounts.info} Minor {issueCounts.info === 1 ? 'issue' : 'issues'}
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-3">Click on a severity level to view details</p>
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="space-y-2 pt-4">
-              <button className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-sm">
-                <CheckCircle className="w-4 h-4" />
-                Accept Fix
-              </button>
+            {/* Action Buttons - Only show if there's a current issue */}
+            {currentIssue && (
+              <div className="space-y-2 pt-4">
+                <button className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  Accept Fix
+                </button>
 
-              <button className="w-full px-4 py-3 bg-slate-800/30 hover:bg-slate-800/50 border border-red-600/50 text-red-400 rounded-lg font-medium transition-colors text-sm">
-                Reject (False Positive)
-              </button>
+                <button className="w-full px-4 py-3 bg-slate-800/30 hover:bg-slate-800/50 border border-red-600/50 text-red-400 rounded-lg font-medium transition-colors text-sm">
+                  Reject (False Positive)
+                </button>
 
-              <button className="w-full px-4 py-3 bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700 text-slate-300 rounded-lg font-medium transition-colors text-sm">
-                Edit Manually
-              </button>
-            </div>
+                <button className="w-full px-4 py-3 bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700 text-slate-300 rounded-lg font-medium transition-colors text-sm">
+                  Edit Manually
+                </button>
+              </div>
+            )}
 
-            {/* Other Issues */}
-            {segmentIssues.length > 1 && (
+            {/* Other Issues List */}
+            {otherIssues.length > 0 && (
               <div className="pt-4 border-t border-slate-700 space-y-3">
-                <p className="text-xs font-semibold text-slate-400 uppercase">Other Issues</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase">Other Issues in This Segment</p>
                 <div className="space-y-2 max-h-48 overflow-auto">
-                  {segmentIssues
-                    .filter((issue) => issue.severity !== selectedSeverity)
-                    .map((issue, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedSeverity(issue.severity as any)}
-                        className="w-full text-left p-2 bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700 rounded-lg text-xs text-slate-300 transition-colors"
-                      >
-                        <div className="font-medium">{issue.check_type}</div>
-                        <div className="text-slate-500 mt-0.5">{issue.message}</div>
-                      </button>
-                    ))}
+                  {otherIssues.map((issue, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedSeverity(issue.severity as any)}
+                      className="w-full text-left p-2 bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700 rounded-lg text-xs text-slate-300 transition-colors"
+                    >
+                      <div className="font-medium flex items-center gap-2">
+                        {issue.severity === 'error' && (
+                          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                        )}
+                        {issue.severity === 'warning' && (
+                          <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                        )}
+                        {issue.severity === 'info' && (
+                          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        )}
+                        {issue.check_type}
+                      </div>
+                      <div className="text-slate-500 mt-0.5">{issue.message}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="text-center">
+              <p className="text-slate-300 font-medium mb-1">No segment selected</p>
+              <p className="text-slate-400 text-sm">Select a segment from the left to view issues</p>
+            </div>
           </div>
         )}
       </div>
