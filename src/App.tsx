@@ -103,12 +103,15 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           segments: segments.map(s => ({
-            id: s.segment_id,
-            source: s.source_text,
-            target: s.target_text,
+            segment_id: s.segment_id,
+            source_text: s.source_text,
+            target_text: s.target_text,
+            status: s.status || 'translated',
+            source_language: s.source_language || 'en',
+            target_language: s.target_language || 'tr',
           })),
           mode: qaMode,
-          qa_checker: qaChecker,
+          use_comprehensive: qaChecker === 'comprehensive',
         }),
         signal: controller.signal,
       })

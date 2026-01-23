@@ -77,7 +77,7 @@ export const DashboardPage = ({
             disabled={isLoading}
             className="hidden"
             id="file-upload"
-            accept=".xlf,.xliff,.zip"
+            accept=".xlf,.xliff,.xml,.sdlxliff,.mqxliff,.mxliff,.xlz,.wsxz,.sdlppx,.sdlrpx,.mqout,.zip"
           />
           <label htmlFor="file-upload" className="cursor-pointer">
             <div className="flex flex-col items-center gap-4">
