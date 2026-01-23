@@ -195,6 +195,18 @@ function App() {
     )
   }
 
+  // QA Results showing - display ONLY the translation dashboard (full screen)
+  if (qaResults && segments.length > 0) {
+    return (
+      <ErrorBoundary>
+        <ModernTranslationDashboard
+          segments={segments}
+          qaResults={qaResults}
+        />
+      </ErrorBoundary>
+    )
+  }
+
   if (segments.length === 0) {
     return (
       <ErrorBoundary>
@@ -415,14 +427,6 @@ function App() {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Results - AI LQA Translation Workbench */}
-          {qaResults && (
-            <ModernTranslationDashboard
-              segments={segments}
-              qaResults={qaResults}
-            />
           )}
 
           {/* Segments Summary - Bento Grid */}
