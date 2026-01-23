@@ -98,29 +98,40 @@ function App() {
       const requestId = `qa-${Date.now()}`
       abortControllersRef.current.set(requestId, controller)
 
+      const requestBody = {
+        segments: segments.map(s => ({
+          segment_id: s.segment_id,
+          source_text: s.source_text,
+          target_text: s.target_text,
+          status: s.status || 'translated',
+          source_language: s.source_language || 'en',
+          target_language: s.target_language || 'tr',
+        })),
+        mode: qaMode,
+        use_comprehensive: qaChecker === 'comprehensive',
+      }
+
+      console.log('QA Request:', {
+        segmentCount: requestBody.segments.length,
+        firstSegment: requestBody.segments[0],
+        mode: requestBody.mode,
+      })
+
       const response = await fetch(API_ENDPOINTS.QA_CHECK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          segments: segments.map(s => ({
-            segment_id: s.segment_id,
-            source_text: s.source_text,
-            target_text: s.target_text,
-            status: s.status || 'translated',
-            source_language: s.source_language || 'en',
-            target_language: s.target_language || 'tr',
-          })),
-          mode: qaMode,
-          use_comprehensive: qaChecker === 'comprehensive',
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
 
       if (!response.ok) {
-        throw new Error(`QA check failed: ${response.statusText}`)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('QA check error response:', errorData)
+        throw new Error(`QA check failed: ${response.statusText} - ${errorData.error || 'Unknown error'}`)
       }
 
       const data = await response.json()
+      console.log('QA Results:', data)
       setQAResults(data)
       setCurrentPage('qa-results')
       setSuccessMessage('QA check completed')
