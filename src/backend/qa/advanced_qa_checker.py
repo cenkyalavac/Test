@@ -268,26 +268,39 @@ class AdvancedQAChecker:
 
     def _check_alphanumeric_mismatches(self, segment: Segment) -> None:
         """
-        Check for alphanumeric sequence mismatches.
-        EXCEPTION: Allow language code changes in filenames (e.g., Filename.de → Filename.tr).
+        Check for numeric and code mismatches ONLY.
+
+        CRITICAL: Only match actual numbers and uppercase alphanumeric codes.
+        Do NOT match normal words (like 'Lasten', 'entfernen').
+
+        Pattern matches:
+        - Plain numbers: 123, 2.5, 1.000,50 (with locale separators)
+        - Uppercase codes: K005, ABC123, Version2x (must start uppercase)
+
+        Does NOT match:
+        - Regular words with mixed case
+        - Lowercase only words
         """
-        # Extract sequences like "version 2.1", "build 123", etc.
-        pattern = r'[A-Za-z]*[\d\.]+[A-Za-z]*'
+        # Extract ONLY numbers and uppercase codes like "K005", "V2.1", etc.
+        # This pattern matches:
+        # 1. Numbers (with optional dots/commas): \d+(?:[.,]\d+)*
+        # 2. Uppercase alphanum codes: [A-Z]+\d+[A-Z0-9]*
+        pattern = r'(?:\d+(?:[.,]\d+)*|[A-Z]+\d+[A-Z0-9]*)'
 
-        source_alphanums = set(re.findall(pattern, segment.source_text))
-        target_alphanums = set(re.findall(pattern, segment.target_text))
+        source_matches = set(re.findall(pattern, segment.source_text))
+        target_matches = set(re.findall(pattern, segment.target_text))
 
-        if source_alphanums and source_alphanums != target_alphanums:
-            missing = source_alphanums - target_alphanums
+        if source_matches and source_matches != target_matches:
+            missing = source_matches - target_matches
 
             # Filter out language code changes (e.g., ".de" vs ".tr")
             filtered_missing = set()
             for item in missing:
                 # Check if it's a language code pattern like ".de", ".fr", ".tr", etc.
                 if re.match(r'^\.[a-z]{2}$', item):
-                    # This is likely a language code - check if target has ANY language code
+                    # This is a language code - check if target has ANY language code
                     lang_code_pattern = r'\.[a-z]{2}'
-                    if re.search(lang_code_pattern, ' '.join(target_alphanums)):
+                    if re.search(lang_code_pattern, ' '.join(target_matches)):
                         # Target has a language code, so this is a legitimate change
                         continue
                 filtered_missing.add(item)
@@ -334,8 +347,30 @@ class AdvancedQAChecker:
                 )
 
     def _check_unpaired_quotes(self, segment: Segment) -> None:
-        """Check for unpaired quotes."""
-        quote_types = ['"', "'", '«', '»', '"', '"', ''', ''']
+        """
+        Check for unpaired quotation marks.
+
+        CRITICAL: Only check actual quote characters.
+        Do NOT check commas, periods, or other punctuation.
+
+        Supported quotes:
+        - Straight quotes: " (double), ' (single)
+        - Curly quotes: " " (left/right double), ' ' (left/right single)
+        - Angle quotes: « » (guillemets)
+
+        EXCLUDED: Comma (,) is NEVER a quote character!
+        """
+        # ONLY quotation marks - NO commas, NO other punctuation
+        quote_types = [
+            '"',   # Straight double quote
+            "'",   # Straight single quote / apostrophe
+            '"',   # Left double quotation mark (curly)
+            '"',   # Right double quotation mark (curly)
+            ''',   # Left single quotation mark (curly)
+            ''',   # Right single quotation mark (curly)
+            '«',   # Left-pointing double angle quotation mark
+            '»',   # Right-pointing double angle quotation mark
+        ]
 
         for quote in quote_types:
             source_count = segment.source_text.count(quote)
@@ -347,10 +382,10 @@ class AdvancedQAChecker:
                         segment_id=segment.segment_id,
                         check_type=QACheckType.UNPAIRED_QUOTES,
                         severity="warning",
-                        message=f"Unpaired quote {quote}: source={source_count}, target={target_count}",
+                        message=f"Unpaired quote: source={source_count}, target={target_count}",
                         source_text=segment.source_text,
                         target_text=segment.target_text,
-                        details={"quote": quote},
+                        details={"quote_char": repr(quote), "source_count": source_count, "target_count": target_count},
                     )
                 )
 
