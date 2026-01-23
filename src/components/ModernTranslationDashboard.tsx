@@ -395,17 +395,64 @@ export const ModernTranslationDashboard: React.FC<{ segments: SegmentWithMatch[]
               </div>
             )}
           </div>
+
+          {/* Issues by Type */}
+          {qaResults.summary?.by_type && Object.keys(qaResults.summary.by_type).length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-200 mb-3">Issues by Type</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {Object.entries(qaResults.summary.by_type).map(([type, count]: [string, any]) => (
+                  <div key={type} className="bg-slate-700/30 p-3 rounded-lg border border-slate-600/50 text-center">
+                    <p className="text-slate-400 text-xs font-medium uppercase">{type.replace(/_/g, ' ')}</p>
+                    <p className="text-2xl font-bold text-white">{count}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Detailed Issues List */}
           {qaResults.issues && qaResults.issues.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-slate-200 mb-3">Issues</h3>
+              <h3 className="text-lg font-semibold text-slate-200 mb-3">
+                Issue Details (Showing first 20 of {qaResults.issues.length})
+              </h3>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {qaResults.issues.slice(0, 10).map((issue: any, idx: number) => (
-                  <div key={idx} className={`p-3 rounded-lg border text-sm ${
-                    issue.severity === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-300' :
-                    issue.severity === 'warning' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' :
-                    'bg-blue-500/10 border-blue-500/20 text-blue-300'
+                {qaResults.issues.slice(0, 20).map((issue: any, idx: number) => (
+                  <div key={idx} className={`p-4 rounded-lg border ${
+                    issue.severity === 'error' ? 'bg-red-900/20 border-red-500/30' :
+                    issue.severity === 'warning' ? 'bg-yellow-900/20 border-yellow-500/30' :
+                    'bg-blue-900/20 border-blue-500/30'
                   }`}>
-                    <span className="font-semibold">{issue.check_type}</span>: {issue.message}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                          issue.severity === 'error' ? 'bg-red-500/30 text-red-300' :
+                          issue.severity === 'warning' ? 'bg-yellow-500/30 text-yellow-300' :
+                          'bg-blue-500/30 text-blue-300'
+                        }`}>
+                          {issue.severity.toUpperCase()}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-300 bg-slate-700/50 px-2 py-1 rounded">
+                          {issue.check_type.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-400">Seg #{issue.segment_id}</span>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-200 mb-1">{issue.message}</p>
+                    {(issue.source_text || issue.target_text) && (
+                      <div className="text-xs text-slate-400 space-y-1">
+                        {issue.source_text && <p><strong>Source:</strong> {issue.source_text.substring(0, 80)}</p>}
+                        {issue.target_text && <p><strong>Target:</strong> {issue.target_text.substring(0, 80)}</p>}
+                      </div>
+                    )}
+                    {issue.details && Object.keys(issue.details).length > 0 && (
+                      <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-600/30">
+                        {Object.entries(issue.details).map(([key, value]: [string, any]) => (
+                          <p key={key}><strong>{key}:</strong> {String(value).substring(0, 60)}</p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
