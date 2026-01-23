@@ -183,6 +183,12 @@ class XLIFFStrategy(BaseParser):
         if not unit_id:
             return None
 
+        # CRITICAL: Skip segments marked with translate='no' or translate='false'
+        # These are not meant to be translated
+        translate_attr = unit.get("translate", "yes").lower()
+        if translate_attr in ("no", "false"):
+            return None
+
         # For XLIFF 2.0, segment is nested
         search_root = unit
         if self.xliff_version == "2.0":
@@ -203,6 +209,12 @@ class XLIFFStrategy(BaseParser):
             self._extract_text_content(target_elem) if target_elem is not None
             else ("", "", [])
         )
+
+        # CRITICAL: Skip segments with only tags and whitespace (no actual translatable content)
+        # Example: source_text might be "<cf ptype='x-format'></cf>" or just whitespace
+        # These cause false positive QA errors (tag-only content)
+        if self._is_tag_only_content(source_plain):
+            return None
 
         # Extract status and metadata
         status = self._extract_status(unit)
@@ -392,3 +404,40 @@ class XLIFFStrategy(BaseParser):
 
         # Try without namespace
         return parent.find(tag_name)
+
+    def _is_tag_only_content(self, plain_text: str) -> bool:
+        """
+        Check if content is only tags/whitespace with no actual translatable text.
+
+        Examples that should return True (tag-only):
+        - "" (empty)
+        - "   " (whitespace only)
+        - "<cf ptype='x-format'></cf>" (tags only)
+        - "  <bx id='1'/>  " (tags with whitespace)
+
+        Examples that should return False (has translatable content):
+        - "Hello world"
+        - "Hello <bx/> world"
+        - "123 items"
+        - "café" (accented letters)
+
+        Returns:
+            True if content is empty, whitespace only, or contains no alphanumeric characters
+        """
+        if not plain_text:
+            return True
+
+        # Remove whitespace and check if anything remains
+        stripped = plain_text.strip()
+        if not stripped:
+            return True
+
+        # Check if there's any letter, digit, or non-ASCII character (for accented chars, CJK, etc.)
+        # If all characters are whitespace or punctuation/symbols, it's tag-only
+        has_content = False
+        for char in stripped:
+            if char.isalnum() or ord(char) > 127:  # alphanumeric or non-ASCII
+                has_content = True
+                break
+
+        return not has_content
