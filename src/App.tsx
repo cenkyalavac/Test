@@ -3,7 +3,7 @@ import { Zap, RotateCcw, AlertCircle, CheckCircle, Cloud, TrendingUp, AlertTrian
 import './App.css'
 import ModernFileUpload from './components/ModernFileUpload'
 import { LandingPagePro } from './components/LandingPagePro'
-import { ModernResultsPanel } from './components/ModernResultsPanel'
+import { ModernTranslationDashboard } from './components/ModernTranslationDashboard'
 import AIAnalysisPanel from './components/AIAnalysisPanel'
 import ErrorBoundary from './components/ErrorBoundary'
 import { API_ENDPOINTS } from './config'
@@ -417,12 +417,11 @@ function App() {
             </div>
           )}
 
-          {/* Results */}
+          {/* Results - AI LQA Translation Workbench */}
           {qaResults && (
-            <ModernResultsPanel
+            <ModernTranslationDashboard
               segments={segments}
               qaResults={qaResults}
-              onClose={() => setQAResults(null)}
             />
           )}
 
