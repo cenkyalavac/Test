@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns:sdl="http://sdl.com/Trados/API/ContentHandler/ContentHandlerTypes" version="1.2">
+  <file original="sample" source-language="en-US" target-language="tr-TR" datatype="plaintext">
+    <header/>
+    <body>
+      <trans-unit id="1" sdl:percent-match="100">
+        <source>Save</source>
+        <target>Kaydet</target>
+      </trans-unit>
+      <trans-unit id="2" sdl:percent-match="85">
+        <source>Welcome to our application</source>
+        <target>Uygulamamıza hoş geldiniz</target>
+      </trans-unit>
+      <trans-unit id="3" sdl:percent-match="75">
+        <source>Please enter your username</source>
+        <target>Lütfen kullanıcı adınızı girin</target>
+      </trans-unit>
+      <trans-unit id="4" sdl:percent-match="100">
+        <source>Cancel</source>
+        <target>İptal</target>
+      </trans-unit>
+      <trans-unit id="5" sdl:percent-match="90">
+        <source>Error: File not found</source>
+        <target>Hata: Dosya bulunamadı</target>
+      </trans-unit>
+      <trans-unit id="6" sdl:percent-match="50">
+        <source>The quick brown fox jumps over the lazy dog</source>
+        <target>Hızlı kahverengi tilki tembel köpeğin üzerinden atlar</target>
+      </trans-unit>
+      <trans-unit id="7" sdl:percent-match="100">
+        <source>OK</source>
+        <target>Tamam</target>
+      </trans-unit>
+      <trans-unit id="8" sdl:percent-match="95">
+        <source>Loading...</source>
+        <target>Yükleniyor...</target>
+      </trans-unit>
+      <trans-unit id="9" sdl:percent-match="0">
+        <source>This needs translation</source>
+        <target></target>
+      </trans-unit>
+      <trans-unit id="10" sdl:percent-match="80">
+        <source>Settings saved successfully</source>
+        <target>Ayarlar başarıyla kaydedildi</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file original="sample-document" source-language="en" target-language="de" datatype="plaintext">
+    <header/>
+    <body>
+      <trans-unit id="1" match-quality="100%">
+        <source>Hello</source>
+        <target>Hallo</target>
+      </trans-unit>
+      <trans-unit id="2" match-quality="95%">
+        <source>Good morning</source>
+        <target>Guten Morgen</target>
+      </trans-unit>
+      <trans-unit id="3" match-quality="80%">
+        <source>Thank you for your help</source>
+        <target>Danke für deine Hilfe</target>
+      </trans-unit>
+      <trans-unit id="4" match-quality="100%">
+        <source>Goodbye</source>
+        <target>Auf Wiedersehen</target>
+      </trans-unit>
+      <trans-unit id="5" match-quality="75%">
+        <source>How are you?</source>
+        <target>Wie geht es dir?</target>
+      </trans-unit>
+      <trans-unit id="6" match-quality="90%">
+        <source>I love this software</source>
+        <target>Ich liebe diese Software</target>
+      </trans-unit>
+      <trans-unit id="7" match-quality="100%">
+        <source>Yes</source>
+        <target>Ja</target>
+      </trans-unit>
+      <trans-unit id="8" match-quality="0%">
+        <source>This needs to be translated</source>
+        <target></target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
